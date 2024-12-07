@@ -6,9 +6,19 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Moon } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
+// Add console logs to debug environment variables
+console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+console.log("Supabase Key exists:", !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+// Check if environment variables are available
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.error("Missing Supabase environment variables");
+  throw new Error("Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables");
+}
+
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
 const Index = () => {
