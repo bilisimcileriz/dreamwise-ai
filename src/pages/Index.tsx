@@ -32,8 +32,8 @@ const Index = () => {
   const handleDreamSubmit = async () => {
     if (!dream.trim()) {
       toast({
-        title: "Hata",
-        description: "Lütfen rüyanızı anlatın",
+        title: "Error",
+        description: "Please describe your dream",
         variant: "destructive",
       });
       return;
@@ -41,26 +41,41 @@ const Index = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.from("dreams").insert({
+      // First, save the dream to the database
+      const { error: dbError } = await supabase.from("dreams").insert({
         dream_text: dream,
         user_id: session.user.id,
       });
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
+      // Get the interpretation from our Edge Function
+      const { data: interpretationData, error: interpretationError } = await supabase.functions
+        .invoke('interpret-dream', {
+          body: { dreamText: dream },
+        });
+
+      if (interpretationError) throw interpretationError;
+
+      // Update the dream record with the interpretation
+      const { error: updateError } = await supabase
+        .from('dreams')
+        .update({ interpretation: interpretationData.interpretation })
+        .eq('user_id', session.user.id)
+        .eq('dream_text', dream);
+
+      if (updateError) throw updateError;
+
+      setInterpretation(interpretationData.interpretation);
       toast({
-        title: "Başarılı",
-        description: "Rüyanız kaydedildi",
+        title: "Success",
+        description: "Your dream has been interpreted",
       });
-      
-      // Clear the form after successful submission
-      setDream("");
-      setInterpretation("");
     } catch (error) {
       console.error("Error:", error);
       toast({
-        title: "Hata",
-        description: "Bir hata oluştu. Lütfen tekrar deneyin.",
+        title: "Error",
+        description: "Failed to interpret your dream. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -74,9 +89,9 @@ const Index = () => {
         <div className="max-w-md mx-auto pt-16">
           <div className="text-center mb-8">
             <Moon className="h-16 w-16 text-purple-300 mx-auto" />
-            <h1 className="text-4xl font-bold text-white mt-4">Rüya Tabiri</h1>
+            <h1 className="text-4xl font-bold text-white mt-4">Dream Interpreter</h1>
             <p className="text-purple-200 mt-2">
-              Rüyalarınızı yorumlamak için giriş yapın
+              Sign in to interpret your dreams
             </p>
           </div>
           <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
@@ -107,21 +122,21 @@ const Index = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Moon className="h-8 w-8 text-purple-300" />
-            <h1 className="text-2xl font-bold text-white">Rüya Tabiri</h1>
+            <h1 className="text-2xl font-bold text-white">Dream Interpreter</h1>
           </div>
           <Button
             variant="outline"
             onClick={() => supabase.auth.signOut()}
             className="bg-white/10 text-white hover:bg-white/20 border-purple-500/20"
           >
-            Çıkış Yap
+            Sign Out
           </Button>
         </div>
 
         <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
           <div className="space-y-4">
             <Textarea
-              placeholder="Rüyanızı buraya yazın..."
+              placeholder="Describe your dream here..."
               value={dream}
               onChange={(e) => setDream(e.target.value)}
               className="min-h-[200px] bg-white/5 border-purple-500/30 text-white placeholder:text-purple-300"
@@ -134,10 +149,10 @@ const Index = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Yorumlanıyor...
+                  Interpreting...
                 </>
               ) : (
-                "Rüyayı Yorumla"
+                "Interpret Dream"
               )}
             </Button>
           </div>
@@ -145,9 +160,9 @@ const Index = () => {
           {interpretation && (
             <div className="mt-6 p-4 bg-white/5 rounded-lg border border-purple-500/30">
               <h3 className="text-lg font-semibold text-purple-200 mb-2">
-                Rüya Yorumu
+                Dream Interpretation
               </h3>
-              <p className="text-white">{interpretation}</p>
+              <p className="text-white whitespace-pre-wrap">{interpretation}</p>
             </div>
           )}
         </Card>
