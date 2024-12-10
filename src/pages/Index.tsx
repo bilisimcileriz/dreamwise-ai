@@ -31,6 +31,32 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const ensureProfile = async (userId) => {
+    // Check if profile exists
+    const { data: profile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching profile:", fetchError);
+    }
+
+    // If profile doesn't exist, create it
+    if (!profile) {
+      console.log("Creating profile for user:", userId);
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: userId });
+
+      if (insertError) {
+        console.error("Error creating profile:", insertError);
+        throw insertError;
+      }
+    }
+  };
+
   const handleDreamSubmit = async () => {
     if (!dream.trim()) {
       toast({
@@ -45,6 +71,9 @@ const Index = () => {
     try {
       console.log("Submitting dream for user:", session?.user.id);
       
+      // Ensure profile exists before inserting dream
+      await ensureProfile(session.user.id);
+
       // First, save the dream to the database
       const { error: dbError } = await supabase.from("dreams").insert({
         dream_text: dream,
