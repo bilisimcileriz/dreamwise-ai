@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Auth } from "@supabase/auth-ui-react";
@@ -18,12 +18,14 @@ const Index = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      console.log("Session loaded:", session);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      console.log("Auth state changed:", session);
     });
 
     return () => subscription.unsubscribe();
@@ -41,13 +43,18 @@ const Index = () => {
 
     setIsLoading(true);
     try {
+      console.log("Submitting dream for user:", session?.user.id);
+      
       // First, save the dream to the database
       const { error: dbError } = await supabase.from("dreams").insert({
         dream_text: dream,
         user_id: session.user.id,
       });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database error:", dbError);
+        throw dbError;
+      }
 
       // Get the interpretation from our Edge Function
       const { data: interpretationData, error: interpretationError } = await supabase.functions
@@ -55,7 +62,12 @@ const Index = () => {
           body: { dreamText: dream },
         });
 
-      if (interpretationError) throw interpretationError;
+      if (interpretationError) {
+        console.error("Interpretation error:", interpretationError);
+        throw interpretationError;
+      }
+
+      console.log("Received interpretation:", interpretationData);
 
       // Update the dream record with the interpretation
       const { error: updateError } = await supabase
@@ -64,7 +76,10 @@ const Index = () => {
         .eq('user_id', session.user.id)
         .eq('dream_text', dream);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Update error:", updateError);
+        throw updateError;
+      }
 
       setInterpretation(interpretationData.interpretation);
       toast({
