@@ -15,42 +15,41 @@ export const LoginForm = () => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session);
       
-      // Handle specific auth events that might indicate errors
-      if (event === 'USER_DELETED' || event === 'SIGNED_OUT') {
-        console.log("User signed out or deleted");
+      if (event === "SIGNED_OUT") {
+        console.log("User signed out");
       }
     });
-
-    // Listen for specific error responses in the Auth component
-    const handleAuthError = (error: Error) => {
-      console.error("Auth error:", error);
-
-      if (error.message.includes("rate limit")) {
-        toast({
-          title: "Please wait",
-          description: "Please wait a minute before trying again",
-          variant: "destructive",
-        });
-      } else if (error.message.includes("Invalid login credentials")) {
-        toast({
-          title: "Invalid credentials",
-          description: "Please check your email and password",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Authentication error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    };
 
     // Clean up subscription
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
+
+  // Handle authentication errors
+  const handleError = (error: Error) => {
+    console.error("Auth error:", error);
+
+    if (error.message.includes("rate limit")) {
+      toast({
+        title: "Please wait",
+        description: "Please wait a minute before trying again",
+        variant: "destructive",
+      });
+    } else if (error.message.includes("Invalid login credentials")) {
+      toast({
+        title: "Invalid credentials",
+        description: "Please check your email and password",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Authentication error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4">
@@ -89,7 +88,6 @@ export const LoginForm = () => {
                 },
               },
             }}
-            onError={handleAuthError}
           />
         </Card>
       </div>
