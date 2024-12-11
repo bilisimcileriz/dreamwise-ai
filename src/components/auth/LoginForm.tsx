@@ -3,8 +3,45 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { Card } from "@/components/ui/card";
 import { Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 export const LoginForm = () => {
+  const { toast } = useToast();
+
+  // Listen for auth errors
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onError((error) => {
+      console.error("Auth error:", error);
+
+      if (error.message.includes("rate_limit")) {
+        toast({
+          title: "Please wait",
+          description: "Please wait a minute before trying again",
+          variant: "destructive",
+        });
+      } else if (error.message.includes("Invalid login credentials")) {
+        toast({
+          title: "Invalid credentials",
+          description: "Please check your email and password",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Authentication error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [toast]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4">
       <div className="max-w-md mx-auto pt-16">
@@ -30,6 +67,18 @@ export const LoginForm = () => {
               },
             }}
             providers={[]}
+            localization={{
+              variables: {
+                sign_in: {
+                  email_label: 'Email',
+                  password_label: 'Password',
+                },
+                sign_up: {
+                  email_label: 'Email',
+                  password_label: 'Password',
+                },
+              },
+            }}
           />
         </Card>
       </div>
