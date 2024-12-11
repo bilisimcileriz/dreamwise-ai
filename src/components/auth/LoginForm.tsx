@@ -9,14 +9,23 @@ import { useEffect } from "react";
 export const LoginForm = () => {
   const { toast } = useToast();
 
-  // Listen for auth errors
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onError((error) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
+      
+      // Handle specific auth events that might indicate errors
+      if (event === 'USER_DELETED' || event === 'SIGNED_OUT') {
+        console.log("User signed out or deleted");
+      }
+    });
+
+    // Listen for specific error responses in the Auth component
+    const handleAuthError = (error: Error) => {
       console.error("Auth error:", error);
 
-      if (error.message.includes("rate_limit")) {
+      if (error.message.includes("rate limit")) {
         toast({
           title: "Please wait",
           description: "Please wait a minute before trying again",
@@ -35,8 +44,9 @@ export const LoginForm = () => {
           variant: "destructive",
         });
       }
-    });
+    };
 
+    // Clean up subscription
     return () => {
       subscription.unsubscribe();
     };
@@ -79,6 +89,7 @@ export const LoginForm = () => {
                 },
               },
             }}
+            onError={handleAuthError}
           />
         </Card>
       </div>
