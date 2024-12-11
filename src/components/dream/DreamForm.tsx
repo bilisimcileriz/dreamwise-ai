@@ -30,6 +30,11 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     if (error) {
       console.error("Error fetching credits:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch credits. Please try again.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -45,6 +50,11 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     if (error) {
       console.error("Error deducting credit:", error);
+      toast({
+        title: "Error",
+        description: "Failed to deduct credit. Please try again.",
+        variant: "destructive",
+      });
       throw error;
     }
 
@@ -74,6 +84,9 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         console.error("Error creating profile:", insertError);
         throw insertError;
       }
+      
+      // Fetch credits after creating profile to get the default value
+      await fetchCredits();
     }
   };
 
