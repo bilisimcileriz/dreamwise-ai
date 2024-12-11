@@ -57,25 +57,16 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       
       await ensureProfile(userId);
 
-      // API call to create dream
-      const response = await fetch('/api/dreams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dreamText: dream,
-          userId: userId,
-        }),
+      // Call Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('interpret-dream', {
+        body: { dreamText: dream }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit dream');
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
       console.log("Received interpretation:", data);
-
       setInterpretation(data.interpretation);
       toast({
         title: "Success",
