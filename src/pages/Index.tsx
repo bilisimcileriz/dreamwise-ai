@@ -29,17 +29,21 @@ const Index = () => {
   const handleSignOut = async () => {
     try {
       console.log("Attempting to sign out...");
+      // First clear the local session state
+      setSession(null);
+      
+      // Then attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Sign out error:", error);
+        // Even if there's an error, we keep the session cleared locally
         toast({
-          title: "Error signing out",
-          description: "Please try again",
+          title: "Warning",
+          description: "You've been signed out locally, but there was a server error",
           variant: "destructive",
         });
       } else {
         console.log("Successfully signed out");
-        setSession(null);
         toast({
           title: "Signed out",
           description: "You have been successfully signed out",
@@ -47,9 +51,10 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Unexpected error during sign out:", error);
+      // Keep the session cleared even if there's an error
       toast({
-        title: "Error signing out",
-        description: "An unexpected error occurred",
+        title: "Warning",
+        description: "You've been signed out locally, but there was an error",
         variant: "destructive",
       });
     }
