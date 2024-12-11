@@ -4,9 +4,11 @@ import { Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { DreamForm } from "@/components/dream/DreamForm";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [session, setSession] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -24,6 +26,35 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleSignOut = async () => {
+    try {
+      console.log("Attempting to sign out...");
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error);
+        toast({
+          title: "Error signing out",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Successfully signed out");
+        setSession(null);
+        toast({
+          title: "Signed out",
+          description: "You have been successfully signed out",
+        });
+      }
+    } catch (error) {
+      console.error("Unexpected error during sign out:", error);
+      toast({
+        title: "Error signing out",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!session) {
     return <LoginForm />;
   }
@@ -38,7 +69,7 @@ const Index = () => {
           </div>
           <Button
             variant="outline"
-            onClick={() => supabase.auth.signOut()}
+            onClick={handleSignOut}
             className="bg-white/10 text-white hover:bg-white/20 border-purple-500/20"
           >
             Sign Out
