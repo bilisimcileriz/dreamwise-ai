@@ -57,40 +57,26 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       
       await ensureProfile(userId);
 
-      const { error: dbError } = await supabase.from("dreams").insert({
-        dream_text: dream,
-        user_id: userId,
+      // API call to create dream
+      const response = await fetch('/api/dreams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dreamText: dream,
+          userId: userId,
+        }),
       });
 
-      if (dbError) {
-        console.error("Database error:", dbError);
-        throw dbError;
+      if (!response.ok) {
+        throw new Error('Failed to submit dream');
       }
 
-      const { data: interpretationData, error: interpretationError } = await supabase.functions
-        .invoke('interpret-dream', {
-          body: { dreamText: dream },
-        });
+      const data = await response.json();
+      console.log("Received interpretation:", data);
 
-      if (interpretationError) {
-        console.error("Interpretation error:", interpretationError);
-        throw interpretationError;
-      }
-
-      console.log("Received interpretation:", interpretationData);
-
-      const { error: updateError } = await supabase
-        .from('dreams')
-        .update({ interpretation: interpretationData.interpretation })
-        .eq('user_id', userId)
-        .eq('dream_text', dream);
-
-      if (updateError) {
-        console.error("Update error:", updateError);
-        throw updateError;
-      }
-
-      setInterpretation(interpretationData.interpretation);
+      setInterpretation(data.interpretation);
       toast({
         title: "Success",
         description: "Your dream has been interpreted",
