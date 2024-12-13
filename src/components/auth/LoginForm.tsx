@@ -12,19 +12,39 @@ export const LoginForm = () => {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       
-      if (event === "SIGNED_OUT") {
+      if (event === "SIGNED_IN") {
+        console.log("User signed in, updating profile with username");
+        // Extract username from email
+        const username = session?.user?.email?.split('@')[0];
+        if (username && session?.user?.id) {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ username: username })
+            .eq('id', session.user.id);
+
+          if (error) {
+            console.error("Error updating username:", error);
+            toast({
+              title: "Error",
+              description: "Failed to update username",
+              variant: "destructive",
+            });
+          } else {
+            console.log("Username updated successfully:", username);
+          }
+        }
+      } else if (event === "SIGNED_OUT") {
         console.log("User signed out");
       }
     });
 
-    // Clean up subscription
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   // Handle authentication errors
   const handleError = (error: Error) => {
