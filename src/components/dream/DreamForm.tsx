@@ -89,24 +89,47 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     }
   };
 
-  const logDream = async (dreamText: string, status: 'pending' | 'success' | 'failed') => {
-    console.log(`Logging dream with status: ${status}`);
-    const { error } = await supabase
+  const createOrUpdateDream = async (dreamText: string, status: 'pending' | 'success' | 'failed', dreamInterpretation?: string) => {
+    console.log(`Creating/Updating dream with status: ${status}`);
+    
+    // First try to find an existing pending dream
+    const { data: existingDream } = await supabase
       .from('dreams')
-      .insert({
-        user_id: userId,
-        dream_text: dreamText,
-        status: status,
-        interpretation: status === 'success' ? interpretation : null
-      });
+      .select('id')
+      .eq('user_id', userId)
+      .eq('dream_text', dreamText)
+      .eq('status', 'pending')
+      .single();
 
-    if (error) {
-      console.error("Error logging dream:", error);
-      toast({
-        title: "Warning",
-        description: "Failed to log dream request, but interpretation was successful.",
-        variant: "destructive",
-      });
+    if (existingDream) {
+      // Update existing dream
+      const { error } = await supabase
+        .from('dreams')
+        .update({
+          status: status,
+          interpretation: dreamInterpretation
+        })
+        .eq('id', existingDream.id);
+
+      if (error) {
+        console.error("Error updating dream:", error);
+        throw error;
+      }
+    } else {
+      // Create new dream record
+      const { error } = await supabase
+        .from('dreams')
+        .insert({
+          user_id: userId,
+          dream_text: dreamText,
+          status: status,
+          interpretation: dreamInterpretation
+        });
+
+      if (error) {
+        console.error("Error creating dream:", error);
+        throw error;
+      }
     }
   };
 
@@ -135,8 +158,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       
       await ensureProfile(userId);
       
-      // Log initial dream submission
-      await logDream(dream, 'pending');
+      // Create initial dream record
+      await createOrUpdateDream(dream, 'pending');
 
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('interpret-dream', {
@@ -144,18 +167,19 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       });
 
       if (error) {
-        await logDream(dream, 'failed');
+        await createOrUpdateDream(dream, 'failed');
         throw error;
       }
 
       // Deduct credit after successful interpretation
       await deductCredit();
 
-      console.log("Received interpretation:", data);
-      setInterpretation(data.interpretation);
+      const interpretation = data.interpretation;
+      console.log("Received interpretation:", interpretation);
+      setInterpretation(interpretation);
       
-      // Log successful interpretation
-      await logDream(dream, 'success');
+      // Update dream record with success status and interpretation
+      await createOrUpdateDream(dream, 'success', interpretation);
 
       toast({
         title: "Success",
