@@ -92,44 +92,53 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const createOrUpdateDream = async (dreamText: string, status: 'pending' | 'success' | 'failed', dreamInterpretation?: string) => {
     console.log(`Creating/Updating dream with status: ${status}`);
     
-    // First try to find an existing pending dream
-    const { data: existingDream } = await supabase
-      .from('dreams')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('dream_text', dreamText)
-      .eq('status', 'pending')
-      .single();
-
-    if (existingDream) {
-      // Update existing dream
-      const { error } = await supabase
+    try {
+      // First try to find an existing pending dream
+      const { data: existingDreams, error: searchError } = await supabase
         .from('dreams')
-        .update({
-          status: status,
-          interpretation: dreamInterpretation
-        })
-        .eq('id', existingDream.id);
+        .select('id')
+        .eq('user_id', userId)
+        .eq('dream_text', dreamText)
+        .eq('status', 'pending');
 
-      if (error) {
-        console.error("Error updating dream:", error);
-        throw error;
+      if (searchError) {
+        console.error("Error searching for existing dream:", searchError);
+        throw searchError;
       }
-    } else {
-      // Create new dream record
-      const { error } = await supabase
-        .from('dreams')
-        .insert({
-          user_id: userId,
-          dream_text: dreamText,
-          status: status,
-          interpretation: dreamInterpretation
-        });
 
-      if (error) {
-        console.error("Error creating dream:", error);
-        throw error;
+      if (existingDreams && existingDreams.length > 0) {
+        // Update existing dream
+        const { error } = await supabase
+          .from('dreams')
+          .update({
+            status: status,
+            interpretation: dreamInterpretation
+          })
+          .eq('id', existingDreams[0].id);
+
+        if (error) {
+          console.error("Error updating dream:", error);
+          throw error;
+        }
+      } else {
+        // Create new dream record
+        const { error } = await supabase
+          .from('dreams')
+          .insert({
+            user_id: userId,
+            dream_text: dreamText,
+            status: status,
+            interpretation: dreamInterpretation
+          });
+
+        if (error) {
+          console.error("Error creating dream:", error);
+          throw error;
+        }
       }
+    } catch (error) {
+      console.error("Error in createOrUpdateDream:", error);
+      throw error;
     }
   };
 
