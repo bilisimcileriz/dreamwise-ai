@@ -35,52 +35,27 @@ export class DreamService {
   static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', dreamInterpretation?: string) {
     console.log(`Creating/Updating dream with status: ${status}, interpretation: ${dreamInterpretation}`);
     
+    const dreamData = {
+      user_id: userId,
+      dream_text: dreamText,
+      status,
+      interpretation: dreamInterpretation,
+      updated_at: new Date().toISOString()
+    };
+
+    console.log("Saving dream data:", dreamData);
+
     try {
-      // First try to find an existing pending dream
-      const { data: existingDreams, error: searchError } = await supabase
+      const { error } = await supabase
         .from('dreams')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('dream_text', dreamText)
-        .eq('status', 'pending');
+        .insert(dreamData);
 
-      if (searchError) {
-        console.error("Error searching for existing dream:", searchError);
-        throw searchError;
+      if (error) {
+        console.error("Error saving dream:", error);
+        throw error;
       }
 
-      const dreamData = {
-        status,
-        interpretation: dreamInterpretation || null, // Ensure interpretation is explicitly set
-        updated_at: new Date().toISOString(),
-        ...((!existingDreams || existingDreams.length === 0) && {
-          user_id: userId,
-          dream_text: dreamText,
-        })
-      };
-
-      if (existingDreams && existingDreams.length > 0) {
-        console.log("Updating existing dream with interpretation:", dreamInterpretation);
-        const { error } = await supabase
-          .from('dreams')
-          .update(dreamData)
-          .eq('id', existingDreams[0].id);
-
-        if (error) {
-          console.error("Error updating dream:", error);
-          throw error;
-        }
-      } else {
-        console.log("Creating new dream with interpretation:", dreamInterpretation);
-        const { error } = await supabase
-          .from('dreams')
-          .insert(dreamData);
-
-        if (error) {
-          console.error("Error creating dream:", error);
-          throw error;
-        }
-      }
+      console.log("Successfully saved dream with interpretation");
     } catch (error) {
       console.error("Error in createOrUpdateDream:", error);
       throw error;

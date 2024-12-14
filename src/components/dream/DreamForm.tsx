@@ -57,21 +57,19 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     setIsLoading(true);
     try {
-      // Create initial dream record with pending status
-      await DreamService.createOrUpdateDream(userId, dream, 'pending');
-
-      // Get interpretation from AI
-      const interpretation = await DreamService.interpretDream(dream);
+      // Get interpretation from AI first
+      const interpretationResult = await DreamService.interpretDream(dream);
+      console.log("Received interpretation:", interpretationResult);
       
-      // Update dream record with success status and interpretation
-      await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
+      // Save dream with interpretation
+      await DreamService.createOrUpdateDream(userId, dream, 'success', interpretationResult);
       
       // Deduct credit after successful interpretation
       const newCredits = await DreamService.deductCredit(userId, credits);
       setCredits(newCredits);
       
       // Update UI with interpretation
-      setInterpretation(interpretation);
+      setInterpretation(interpretationResult);
       
       toast({
         title: "Success",
