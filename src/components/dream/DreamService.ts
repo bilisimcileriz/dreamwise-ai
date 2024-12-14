@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export class DreamService {
   static async fetchCredits(userId: string) {
-    console.log("Fetching credits for user:", userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('credits')
@@ -14,28 +13,22 @@ export class DreamService {
       throw error;
     }
 
-    console.log("Current credits:", data.credits);
     return data.credits;
   }
 
   static async deductCredit(userId: string, currentCredits: number) {
-    console.log("Deducting credit. Current credits:", currentCredits);
-    
-    const newCreditAmount = Math.max(0, currentCredits - 1);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
-      .update({ credits: newCreditAmount })
-      .eq('id', userId)
-      .select('credits')
-      .single();
+      .update({ credits: currentCredits - 1 })
+      .eq('id', userId);
 
     if (error) {
       console.error("Error deducting credit:", error);
       throw error;
     }
 
-    console.log("Credits after deduction:", data.credits);
-    return data.credits;
+    console.log("Credit deducted. Remaining credits:", currentCredits - 1);
+    return currentCredits - 1;
   }
 
   static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', interpretation?: string) {
