@@ -33,7 +33,7 @@ export class DreamService {
   }
 
   static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', dreamInterpretation?: string) {
-    console.log(`Creating/Updating dream with status: ${status}, interpretation: ${dreamInterpretation}`);
+    console.log(`Creating/Updating dream with status: ${status}`);
     
     try {
       // First try to find an existing pending dream
@@ -51,8 +51,7 @@ export class DreamService {
 
       const dreamData = {
         status,
-        interpretation: dreamInterpretation || null, // Ensure interpretation is explicitly set
-        updated_at: new Date().toISOString(),
+        interpretation: dreamInterpretation,
         ...((!existingDreams || existingDreams.length === 0) && {
           user_id: userId,
           dream_text: dreamText,
@@ -60,7 +59,6 @@ export class DreamService {
       };
 
       if (existingDreams && existingDreams.length > 0) {
-        console.log("Updating existing dream with interpretation:", dreamInterpretation);
         const { error } = await supabase
           .from('dreams')
           .update(dreamData)
@@ -71,7 +69,6 @@ export class DreamService {
           throw error;
         }
       } else {
-        console.log("Creating new dream with interpretation:", dreamInterpretation);
         const { error } = await supabase
           .from('dreams')
           .insert(dreamData);
