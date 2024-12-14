@@ -25,9 +25,11 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
   const fetchCredits = async () => {
     try {
-      const credits = await DreamService.fetchCredits(userId);
-      setCredits(credits);
+      const userCredits = await DreamService.fetchCredits(userId);
+      console.log("Fetched initial credits:", userCredits);
+      setCredits(userCredits);
     } catch (error) {
+      console.error("Error fetching credits:", error);
       toast({
         title: "Error",
         description: "Failed to fetch credits. Please try again.",
@@ -73,8 +75,9 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       // Update the UI with the interpretation
       setInterpretation(interpretationResult);
 
-      // Deduct credit after successful interpretation and saving
+      // Deduct credit and update UI with new credit count
       const newCredits = await DreamService.deductCredit(userId, credits);
+      console.log("Updated credits after deduction:", newCredits);
       setCredits(newCredits);
 
       toast({
