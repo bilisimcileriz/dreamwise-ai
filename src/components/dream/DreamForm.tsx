@@ -57,32 +57,28 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     setIsLoading(true);
     try {
-      // First get the interpretation from AI
-      const interpretationResult = await DreamService.interpretDream(dream);
-      console.log("Received interpretation from AI:", interpretationResult);
+      // Create initial dream record with pending status
+      await DreamService.createOrUpdateDream(userId, dream, 'pending');
 
-      // Then save the dream with the interpretation
-      await DreamService.createOrUpdateDream(
-        userId,
-        dream,
-        'success',
-        interpretationResult
-      );
-      console.log("Dream saved with interpretation");
-
-      // Update the UI with the interpretation
-      setInterpretation(interpretationResult);
-
-      // Deduct credit after successful interpretation and saving
+      // Get interpretation from AI
+      const interpretation = await DreamService.interpretDream(dream);
+      
+      // Update dream record with success status and interpretation
+      await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
+      
+      // Deduct credit after successful interpretation
       const newCredits = await DreamService.deductCredit(userId, credits);
       setCredits(newCredits);
-
+      
+      // Update UI with interpretation
+      setInterpretation(interpretation);
+      
       toast({
         title: "Success",
         description: "Your dream has been interpreted",
       });
     } catch (error) {
-      console.error("Error in dream interpretation process:", error);
+      console.error("Error:", error);
       await DreamService.createOrUpdateDream(userId, dream, 'failed');
       toast({
         title: "Error",

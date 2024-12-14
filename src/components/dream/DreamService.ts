@@ -13,6 +13,7 @@ export class DreamService {
       throw error;
     }
 
+    console.log("Current credits:", data.credits);
     return data.credits;
   }
 
@@ -31,31 +32,59 @@ export class DreamService {
     return currentCredits - 1;
   }
 
-  static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', interpretation?: string) {
-    console.log("Creating dream record with:", {
-      userId,
-      dreamText,
-      status,
-      interpretation
-    });
+  static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', dreamInterpretation?: string) {
+    console.log(`Creating/Updating dream with status: ${status}, interpretation: ${dreamInterpretation}`);
+    
+    try {
+      // First try to find an existing pending dream
+      const { data: existingDreams, error: searchError } = await supabase
+        .from('dreams')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('dream_text', dreamText)
+        .eq('status', 'pending');
 
-    const { error } = await supabase
-      .from('dreams')
-      .insert({
-        user_id: userId,
-        dream_text: dreamText,
-        status: status,
-        interpretation: interpretation || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+      if (searchError) {
+        console.error("Error searching for existing dream:", searchError);
+        throw searchError;
+      }
 
-    if (error) {
-      console.error("Error saving dream:", error);
+      const dreamData = {
+        status,
+        interpretation: dreamInterpretation || null, // Ensure interpretation is explicitly set
+        updated_at: new Date().toISOString(),
+        ...((!existingDreams || existingDreams.length === 0) && {
+          user_id: userId,
+          dream_text: dreamText,
+        })
+      };
+
+      if (existingDreams && existingDreams.length > 0) {
+        console.log("Updating existing dream with interpretation:", dreamInterpretation);
+        const { error } = await supabase
+          .from('dreams')
+          .update(dreamData)
+          .eq('id', existingDreams[0].id);
+
+        if (error) {
+          console.error("Error updating dream:", error);
+          throw error;
+        }
+      } else {
+        console.log("Creating new dream with interpretation:", dreamInterpretation);
+        const { error } = await supabase
+          .from('dreams')
+          .insert(dreamData);
+
+        if (error) {
+          console.error("Error creating dream:", error);
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error("Error in createOrUpdateDream:", error);
       throw error;
     }
-
-    console.log("Successfully saved dream with interpretation:", interpretation);
   }
 
   static async interpretDream(dreamText: string) {
@@ -66,10 +95,6 @@ export class DreamService {
     if (error) {
       console.error("Error interpreting dream:", error);
       throw error;
-    }
-
-    if (!data?.interpretation) {
-      throw new Error("No interpretation received from AI");
     }
 
     console.log("Received interpretation:", data.interpretation);
