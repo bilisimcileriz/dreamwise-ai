@@ -32,34 +32,31 @@ export class DreamService {
     return currentCredits - 1;
   }
 
-  static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', dreamInterpretation?: string) {
-    console.log(`Creating/Updating dream with status: ${status}, interpretation: ${dreamInterpretation}`);
-    
-    const dreamData = {
-      user_id: userId,
-      dream_text: dreamText,
+  static async createOrUpdateDream(userId: string, dreamText: string, status: 'pending' | 'success' | 'failed', interpretation?: string) {
+    console.log("Creating dream record with:", {
+      userId,
+      dreamText,
       status,
-      interpretation: dreamInterpretation,
-      updated_at: new Date().toISOString()
-    };
+      interpretation
+    });
 
-    console.log("Saving dream data:", dreamData);
+    const { error } = await supabase
+      .from('dreams')
+      .insert({
+        user_id: userId,
+        dream_text: dreamText,
+        status: status,
+        interpretation: interpretation || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
 
-    try {
-      const { error } = await supabase
-        .from('dreams')
-        .insert(dreamData);
-
-      if (error) {
-        console.error("Error saving dream:", error);
-        throw error;
-      }
-
-      console.log("Successfully saved dream with interpretation");
-    } catch (error) {
-      console.error("Error in createOrUpdateDream:", error);
+    if (error) {
+      console.error("Error saving dream:", error);
       throw error;
     }
+
+    console.log("Successfully saved dream with interpretation:", interpretation);
   }
 
   static async interpretDream(dreamText: string) {
@@ -70,6 +67,10 @@ export class DreamService {
     if (error) {
       console.error("Error interpreting dream:", error);
       throw error;
+    }
+
+    if (!data?.interpretation) {
+      throw new Error("No interpretation received from AI");
     }
 
     console.log("Received interpretation:", data.interpretation);
