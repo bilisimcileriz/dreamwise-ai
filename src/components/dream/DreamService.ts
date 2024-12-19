@@ -67,12 +67,12 @@ export class DreamService {
 
       let result;
       if (existingDreams && existingDreams.length > 0) {
-        const { error, data } = await supabase
+        const { data, error } = await supabase
           .from('dreams')
           .update(dreamData)
           .eq('id', existingDreams[0].id)
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error updating dream:", error);
@@ -80,11 +80,11 @@ export class DreamService {
         }
         result = data;
       } else {
-        const { error, data } = await supabase
+        const { data, error } = await supabase
           .from('dreams')
           .insert(dreamData)
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error creating dream:", error);
@@ -93,13 +93,15 @@ export class DreamService {
         result = data;
       }
 
-      // Log the dream creation/update
-      await LogService.createLog(userId, 'DREAM_OPERATION', {
-        action: existingDreams?.length ? 'update' : 'create',
-        dream_id: result.id,
-        status,
-        has_interpretation: !!dreamInterpretation
-      });
+      if (result) {
+        // Log the dream creation/update
+        await LogService.createLog(userId, 'DREAM_OPERATION', {
+          action: existingDreams?.length ? 'update' : 'create',
+          dream_id: result.id,
+          status,
+          has_interpretation: !!dreamInterpretation
+        });
+      }
 
     } catch (error) {
       console.error("Error in createOrUpdateDream:", error);
