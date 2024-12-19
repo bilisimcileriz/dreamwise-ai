@@ -17,24 +17,30 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const [interpretation, setInterpretation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchCredits();
-  }, [userId]);
 
   const fetchCredits = async () => {
     try {
-      const credits = await DreamService.fetchCredits(userId);
-      setCredits(credits);
+      setIsLoadingCredits(true);
+      const fetchedCredits = await DreamService.fetchCredits(userId);
+      console.log("Fetched credits:", fetchedCredits);
+      setCredits(fetchedCredits);
     } catch (error) {
+      console.error("Error fetching credits:", error);
       toast({
         title: "Error",
         description: "Failed to fetch credits. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingCredits(false);
     }
   };
+
+  useEffect(() => {
+    fetchCredits();
+  }, [userId]);
 
   const handleDreamSubmit = async () => {
     if (!dream.trim()) {
@@ -68,6 +74,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       
       // Deduct credit after successful interpretation
       const newCredits = await DreamService.deductCredit(userId, credits);
+      console.log("Credits after deduction:", newCredits);
       setCredits(newCredits);
       
       // Update UI with interpretation
@@ -78,13 +85,15 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Your dream has been interpreted",
       });
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error interpreting dream:", error);
       await DreamService.createOrUpdateDream(userId, dream, 'failed');
       toast({
         title: "Error",
         description: "Failed to interpret your dream. Please try again.",
         variant: "destructive",
       });
+      // Refresh credits in case of error to ensure accurate display
+      fetchCredits();
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +103,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-white">Interpret Your Dream</h2>
-        <CreditsDisplay credits={credits} />
+        <CreditsDisplay credits={credits} isLoading={isLoadingCredits} />
       </div>
 
       <div className="space-y-4">
@@ -102,7 +111,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         <Button
           onClick={handleDreamSubmit}
           className="w-full bg-purple-600 hover:bg-purple-700"
-          disabled={isLoading || !credits || credits < 1}
+          disabled={isLoading || !credits || credits < 1 || isLoadingCredits}
         >
           {isLoading ? (
             <>
