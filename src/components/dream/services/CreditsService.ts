@@ -5,11 +5,13 @@ export class CreditsService {
   static async fetchCredits(userId: string) {
     try {
       const startTime = Date.now();
+      console.log("Fetching credits for user:", userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
       const endTime = Date.now();
 
@@ -31,11 +33,16 @@ export class CreditsService {
 
       if (error) {
         console.error("Error fetching credits:", error);
-        throw error;
+        throw new Error(`Failed to fetch credits: ${error.message}`);
       }
 
-      console.log("Current credits:", data?.credits);
-      return data?.credits;
+      if (data === null) {
+        console.error("No profile found for user:", userId);
+        throw new Error("User profile not found");
+      }
+
+      console.log("Current credits:", data.credits);
+      return data.credits;
     } catch (error) {
       console.error("Error in fetchCredits:", error);
       throw error;
@@ -44,17 +51,25 @@ export class CreditsService {
 
   static async deductCredit(userId: string, currentCredits: number) {
     try {
+      if (currentCredits <= 0) {
+        throw new Error("Insufficient credits");
+      }
+
       const startTime = Date.now();
-      const { error } = await supabase
+      console.log("Deducting credit for user:", userId, "Current credits:", currentCredits);
+
+      const { data, error } = await supabase
         .from('profiles')
         .update({ credits: currentCredits - 1 })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('credits')
+        .single();
 
       const endTime = Date.now();
 
       if (error) {
         console.error("Error deducting credit:", error);
-        throw error;
+        throw new Error(`Failed to deduct credit: ${error.message}`);
       }
 
       // Log credit deduction with detailed API info
@@ -75,8 +90,8 @@ export class CreditsService {
         }
       });
 
-      console.log("Credit deducted. Remaining credits:", currentCredits - 1);
-      return currentCredits - 1;
+      console.log("Credit deducted. New credits:", data?.credits);
+      return data?.credits ?? (currentCredits - 1);
     } catch (error) {
       console.error("Error in deductCredit:", error);
       throw error;

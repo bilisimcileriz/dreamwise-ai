@@ -25,6 +25,11 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       setIsLoadingCredits(true);
       const fetchedCredits = await DreamService.fetchCredits(userId);
       console.log("Fetched credits:", fetchedCredits);
+      
+      if (typeof fetchedCredits !== 'number') {
+        throw new Error("Invalid credits value received");
+      }
+      
       setCredits(fetchedCredits);
     } catch (error) {
       console.error("Error fetching credits:", error);
@@ -33,13 +38,17 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Failed to fetch credits. Please try again.",
         variant: "destructive",
       });
+      setCredits(null);
     } finally {
       setIsLoadingCredits(false);
     }
   };
 
   useEffect(() => {
-    fetchCredits();
+    if (userId) {
+      console.log("Fetching credits for user:", userId);
+      fetchCredits();
+    }
   }, [userId]);
 
   const handleDreamSubmit = async () => {
@@ -65,12 +74,15 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     try {
       // Create initial dream record with pending status
       await DreamService.createOrUpdateDream(userId, dream, 'pending');
+      console.log("Created pending dream record");
 
       // Get interpretation from AI
       const interpretation = await DreamService.interpretDream(dream);
+      console.log("Received dream interpretation");
       
       // Update dream record with success status and interpretation
       await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
+      console.log("Updated dream record with interpretation");
       
       // Deduct credit after successful interpretation
       const newCredits = await DreamService.deductCredit(userId, credits);
