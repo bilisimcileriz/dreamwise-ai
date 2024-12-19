@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { LogService } from "./LogService";
 
 export class DreamService {
   static async fetchCredits(userId: string) {
@@ -27,6 +28,12 @@ export class DreamService {
       console.error("Error deducting credit:", error);
       throw error;
     }
+
+    await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
+      previous_credits: currentCredits,
+      new_credits: currentCredits - 1,
+      action: 'dream_interpretation'
+    });
 
     console.log("Credit deducted. Remaining credits:", currentCredits - 1);
     return currentCredits - 1;
@@ -58,26 +65,42 @@ export class DreamService {
         })
       };
 
+      let result;
       if (existingDreams && existingDreams.length > 0) {
-        const { error } = await supabase
+        const { error, data } = await supabase
           .from('dreams')
           .update(dreamData)
-          .eq('id', existingDreams[0].id);
+          .eq('id', existingDreams[0].id)
+          .select()
+          .single();
 
         if (error) {
           console.error("Error updating dream:", error);
           throw error;
         }
+        result = data;
       } else {
-        const { error } = await supabase
+        const { error, data } = await supabase
           .from('dreams')
-          .insert(dreamData);
+          .insert(dreamData)
+          .select()
+          .single();
 
         if (error) {
           console.error("Error creating dream:", error);
           throw error;
         }
+        result = data;
       }
+
+      // Log the dream creation/update
+      await LogService.createLog(userId, 'DREAM_OPERATION', {
+        action: existingDreams?.length ? 'update' : 'create',
+        dream_id: result.id,
+        status,
+        has_interpretation: !!dreamInterpretation
+      });
+
     } catch (error) {
       console.error("Error in createOrUpdateDream:", error);
       throw error;
