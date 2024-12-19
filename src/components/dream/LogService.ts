@@ -2,15 +2,22 @@ import { supabase } from "@/integrations/supabase/client";
 
 export class LogService {
   static async createLog(userId: string, operationType: string, details: any) {
-    console.log(`Creating log for operation: ${operationType}`, details);
+    console.log(`Creating detailed log for operation: ${operationType}`, details);
     
     try {
+      // Add timestamp to all logs
+      const enrichedDetails = {
+        ...details,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+      };
+
       const { error } = await supabase
         .from('operation_logs')
         .insert({
           user_id: userId,
           operation_type: operationType,
-          details
+          details: enrichedDetails
         });
 
       if (error) {
