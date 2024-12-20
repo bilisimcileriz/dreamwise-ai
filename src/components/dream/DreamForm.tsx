@@ -21,18 +21,26 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const { toast } = useToast();
 
   const fetchCredits = async () => {
+    if (!userId) {
+      console.error("DreamForm: No userId provided for fetchCredits");
+      return;
+    }
+
     try {
+      console.log("DreamForm: Starting to fetch credits for user:", userId);
       setIsLoadingCredits(true);
+      
       const fetchedCredits = await DreamService.fetchCredits(userId);
-      console.log("Fetched credits:", fetchedCredits);
+      console.log("DreamForm: Fetched credits:", fetchedCredits);
       
       if (typeof fetchedCredits !== 'number') {
+        console.error("DreamForm: Invalid credits value received:", fetchedCredits);
         throw new Error("Invalid credits value received");
       }
       
       setCredits(fetchedCredits);
     } catch (error) {
-      console.error("Error fetching credits:", error);
+      console.error("DreamForm: Error fetching credits:", error);
       toast({
         title: "Error",
         description: "Failed to fetch credits. Please try again.",
@@ -46,8 +54,10 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
   useEffect(() => {
     if (userId) {
-      console.log("Fetching credits for user:", userId);
+      console.log("DreamForm: Initial credit fetch for user:", userId);
       fetchCredits();
+    } else {
+      console.error("DreamForm: No userId available for initial credit fetch");
     }
   }, [userId]);
 
@@ -72,21 +82,23 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     setIsLoading(true);
     try {
+      console.log("DreamForm: Starting dream interpretation process");
+      
       // Create initial dream record with pending status
       await DreamService.createOrUpdateDream(userId, dream, 'pending');
-      console.log("Created pending dream record");
+      console.log("DreamForm: Created pending dream record");
 
       // Get interpretation from AI
       const interpretation = await DreamService.interpretDream(dream);
-      console.log("Received dream interpretation");
+      console.log("DreamForm: Received dream interpretation");
       
       // Update dream record with success status and interpretation
       await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
-      console.log("Updated dream record with interpretation");
+      console.log("DreamForm: Updated dream record with interpretation");
       
       // Deduct credit after successful interpretation
       const newCredits = await DreamService.deductCredit(userId, credits);
-      console.log("Credits after deduction:", newCredits);
+      console.log("DreamForm: Credits after deduction:", newCredits);
       setCredits(newCredits);
       
       // Update UI with interpretation
@@ -97,7 +109,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Your dream has been interpreted",
       });
     } catch (error) {
-      console.error("Error interpreting dream:", error);
+      console.error("DreamForm: Error interpreting dream:", error);
       await DreamService.createOrUpdateDream(userId, dream, 'failed');
       toast({
         title: "Error",

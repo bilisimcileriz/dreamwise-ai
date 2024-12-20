@@ -5,7 +5,7 @@ export class CreditsService {
   static async fetchCredits(userId: string) {
     try {
       const startTime = Date.now();
-      console.log("Fetching credits for user:", userId);
+      console.log("CreditsService: Starting credit fetch for user:", userId);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -14,6 +14,7 @@ export class CreditsService {
         .single();
 
       const endTime = Date.now();
+      console.log("CreditsService: Raw response:", { data, error });
 
       // Log the API request details
       await LogService.createLog(userId, 'API_REQUEST', {
@@ -32,19 +33,19 @@ export class CreditsService {
       });
 
       if (error) {
-        console.error("Error fetching credits:", error);
+        console.error("CreditsService: Error fetching credits:", error);
         throw new Error(`Failed to fetch credits: ${error.message}`);
       }
 
       if (data === null) {
-        console.error("No profile found for user:", userId);
+        console.error("CreditsService: No profile found for user:", userId);
         throw new Error("User profile not found");
       }
 
-      console.log("Current credits:", data.credits);
+      console.log("CreditsService: Successfully fetched credits:", data.credits);
       return data.credits;
     } catch (error) {
-      console.error("Error in fetchCredits:", error);
+      console.error("CreditsService: Caught error in fetchCredits:", error);
       throw error;
     }
   }
@@ -56,7 +57,8 @@ export class CreditsService {
       }
 
       const startTime = Date.now();
-      console.log("Deducting credit for user:", userId, "Current credits:", currentCredits);
+      console.log("CreditsService: Starting credit deduction for user:", userId);
+      console.log("CreditsService: Current credits before deduction:", currentCredits);
 
       const { data, error } = await supabase
         .from('profiles')
@@ -66,9 +68,10 @@ export class CreditsService {
         .single();
 
       const endTime = Date.now();
+      console.log("CreditsService: Deduction response:", { data, error });
 
       if (error) {
-        console.error("Error deducting credit:", error);
+        console.error("CreditsService: Error deducting credit:", error);
         throw new Error(`Failed to deduct credit: ${error.message}`);
       }
 
@@ -90,10 +93,10 @@ export class CreditsService {
         }
       });
 
-      console.log("Credit deducted. New credits:", data?.credits);
+      console.log("CreditsService: Credit deduction successful. New credits:", data?.credits);
       return data?.credits ?? (currentCredits - 1);
     } catch (error) {
-      console.error("Error in deductCredit:", error);
+      console.error("CreditsService: Caught error in deductCredit:", error);
       throw error;
     }
   }
