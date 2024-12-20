@@ -11,7 +11,7 @@ export class CreditsService {
         .from('profiles')
         .select('credits')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       const endTime = Date.now();
       console.log("CreditsService: Raw response:", { data, error });
@@ -37,13 +37,26 @@ export class CreditsService {
         throw new Error(`Failed to fetch credits: ${error.message}`);
       }
 
-      if (data === null) {
-        console.error("CreditsService: No profile found for user:", userId);
-        throw new Error("User profile not found");
+      if (!data) {
+        console.log("CreditsService: No profile found, creating one for user:", userId);
+        // If no profile exists, create one with default credits
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([{ id: userId, credits: 5 }])
+          .select('credits')
+          .single();
+
+        if (createError) {
+          console.error("CreditsService: Error creating profile:", createError);
+          throw new Error(`Failed to create profile: ${createError.message}`);
+        }
+
+        console.log("CreditsService: Successfully created profile with credits:", newProfile?.credits);
+        return newProfile?.credits ?? 5;
       }
 
       console.log("CreditsService: Successfully fetched credits:", data.credits);
-      return data.credits;
+      return data.credits ?? 5; // Fallback to 5 if credits is null
     } catch (error) {
       console.error("CreditsService: Caught error in fetchCredits:", error);
       throw error;
