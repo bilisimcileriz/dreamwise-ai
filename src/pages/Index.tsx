@@ -1,110 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Moon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { DreamForm } from "@/components/dream/DreamForm";
 import { useToast } from "@/hooks/use-toast";
-import { InterpretationService } from "@/components/dream/services/InterpretationService";
-import { Brain, Sparkles, Star } from "lucide-react";
 
 const Index = () => {
-  const [dreamText, setDreamText] = useState("");
-  const [interpretation, setInterpretation] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [session, setSession] = useState(null);
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dreamText.trim()) {
-      toast({
-        title: "Please enter your dream",
-        description: "Share your dream with us to receive an interpretation",
-        variant: "destructive",
-      });
-      return;
-    }
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      console.log("Session loaded:", session);
+    });
 
-    setIsLoading(true);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      console.log("Auth state changed:", session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
     try {
-      const result = await InterpretationService.interpretDream(dreamText);
-      setInterpretation(result);
-      toast({
-        title: "Dream Interpreted",
-        description: "Your dream has been successfully analyzed",
-      });
+      console.log("Attempting to sign out...");
+      // First clear the local session state
+      setSession(null);
+      
+      // Then attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error);
+        // Even if there's an error, we keep the session cleared locally
+        toast({
+          title: "Warning",
+          description: "You've been signed out locally, but there was a server error",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Successfully signed out");
+        toast({
+          title: "Signed out",
+          description: "You have been successfully signed out",
+        });
+      }
     } catch (error) {
-      console.error("Error interpreting dream:", error);
+      console.error("Unexpected error during sign out:", error);
+      // Keep the session cleared even if there's an error
       toast({
-        title: "Error",
-        description: "There was an error interpreting your dream. Please try again.",
+        title: "Warning",
+        description: "You've been signed out locally, but there was an error",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  if (!session) {
+    return <LoginForm />;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900">
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 pt-20 pb-16">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 flex items-center justify-center gap-4">
-            <Sparkles className="h-12 w-12 text-yellow-300" />
-            Unlock Your Dreams
-            <Star className="h-12 w-12 text-yellow-300" />
-          </h1>
-          <p className="text-xl text-purple-200 max-w-2xl mx-auto">
-            Discover the hidden meanings in your dreams with our advanced AI-powered dream interpretation service.
-          </p>
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4">
+      <div className="max-w-4xl mx-auto space-y-8 pt-8">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Moon className="h-8 w-8 text-purple-300" />
+            <h1 className="text-2xl font-bold text-white">Dream Interpreter</h1>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="bg-white/10 text-white hover:bg-white/20 border-purple-500/20"
+          >
+            Sign Out
+          </Button>
         </div>
 
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
-            <h3 className="text-xl font-semibold text-white mb-3">Professional Analysis</h3>
-            <p className="text-purple-200">Get detailed interpretations based on psychological principles and ancient wisdom.</p>
-          </div>
-          <div className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
-            <h3 className="text-xl font-semibold text-white mb-3">Instant Results</h3>
-            <p className="text-purple-200">Receive your dream interpretation immediately through our advanced AI system.</p>
-          </div>
-          <div className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
-            <h3 className="text-xl font-semibold text-white mb-3">Free Trial</h3>
-            <p className="text-purple-200">Try our service now with one free dream interpretation - no sign up required!</p>
-          </div>
-        </div>
-
-        {/* Dream Input Section */}
-        <div className="max-w-2xl mx-auto bg-white/20 p-8 rounded-xl backdrop-blur-md">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="dream" className="block text-lg font-medium text-white mb-2">
-                Share Your Dream
-              </label>
-              <Textarea
-                id="dream"
-                placeholder="Describe your dream in detail..."
-                value={dreamText}
-                onChange={(e) => setDreamText(e.target.value)}
-                className="w-full h-32 bg-white/10 text-white placeholder:text-purple-200"
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white py-4 rounded-lg font-semibold flex items-center justify-center gap-2"
-              disabled={isLoading}
-            >
-              <Brain className="h-5 w-5" />
-              {isLoading ? "Interpreting..." : "Interpret My Dream"}
-            </Button>
-          </form>
-
-          {interpretation && (
-            <div className="mt-8 p-6 bg-white/10 rounded-lg">
-              <h3 className="text-xl font-semibold text-white mb-4">Your Dream Interpretation</h3>
-              <p className="text-purple-200 whitespace-pre-line">{interpretation}</p>
-            </div>
-          )}
-        </div>
+        <DreamForm userId={session.user.id} />
       </div>
     </div>
   );
