@@ -5,9 +5,11 @@ import { Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const LoginForm = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const {
@@ -34,42 +36,19 @@ export const LoginForm = () => {
             });
           } else {
             console.log("Username updated successfully:", username);
+            navigate("/inspiration");
           }
         }
       } else if (event === "SIGNED_OUT") {
         console.log("User signed out");
+        navigate("/");
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
-
-  // Handle authentication errors
-  const handleError = (error: Error) => {
-    console.error("Auth error:", error);
-
-    if (error.message.includes("rate limit")) {
-      toast({
-        title: "Please wait",
-        description: "Please wait a minute before trying again",
-        variant: "destructive",
-      });
-    } else if (error.message.includes("Invalid login credentials")) {
-      toast({
-        title: "Invalid credentials",
-        description: "Please check your email and password",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Authentication error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
+  }, [toast, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4">
