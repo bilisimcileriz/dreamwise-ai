@@ -8,8 +8,10 @@ export class CreditsService {
       console.log("CreditsService: Starting credit fetch for user:", userId);
       
       // First check if user is authenticated
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log("CreditsService: Session check result:", { session, error: sessionError });
+      
+      if (!session) {
         console.error("CreditsService: No active session found");
         throw new Error("User not authenticated");
       }
@@ -37,6 +39,8 @@ export class CreditsService {
           error: error,
           duration_ms: endTime - startTime
         }
+      }).catch(logError => {
+        console.error("CreditsService: Failed to create log:", logError);
       });
 
       if (error) {
@@ -111,6 +115,8 @@ export class CreditsService {
             duration_ms: endTime - startTime
           }
         }
+      }).catch(logError => {
+        console.error("CreditsService: Failed to create deduction log:", logError);
       });
 
       console.log("CreditsService: Credit deduction successful. New credits:", data?.credits);
