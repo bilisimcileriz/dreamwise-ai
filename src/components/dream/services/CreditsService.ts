@@ -6,7 +6,7 @@ export class CreditsService {
     try {
       console.log("CreditsService: Starting credit fetch for user:", userId);
       
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
@@ -17,13 +17,27 @@ export class CreditsService {
         throw new Error(`Database error: ${error.message}`);
       }
 
+      console.log("CreditsService: Profile data received:", profile);
+
       // If no profile exists, return default credits
-      if (!data) {
-        console.log("CreditsService: No profile found, returning default credits");
-        return 5;
+      if (!profile) {
+        console.log("CreditsService: No profile found, creating new profile with default credits");
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, credits: 5 })
+          .select('credits')
+          .single();
+
+        if (insertError) {
+          console.error("CreditsService: Error creating profile:", insertError);
+          throw new Error(`Failed to create profile: ${insertError.message}`);
+        }
+
+        console.log("CreditsService: New profile created with credits:", newProfile?.credits);
+        return newProfile?.credits ?? 5;
       }
 
-      const credits = data.credits ?? 5;
+      const credits = profile.credits ?? 5;
       console.log("CreditsService: Returning credits:", credits);
       return credits;
 
@@ -35,14 +49,15 @@ export class CreditsService {
 
   static async deductCredit(userId: string, currentCredits: number): Promise<number> {
     try {
+      console.log("CreditsService: Starting credit deduction for user:", userId, "current credits:", currentCredits);
+      
       if (currentCredits <= 0) {
         console.error("CreditsService: Insufficient credits");
         throw new Error("Insufficient credits");
       }
 
-      console.log("CreditsService: Deducting credit for user:", userId);
-      
       const newCredits = currentCredits - 1;
+      
       const { data, error } = await supabase
         .from('profiles')
         .update({ credits: newCredits })

@@ -22,7 +22,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
   const fetchCredits = async () => {
     try {
-      console.log("DreamForm: Fetching credits for user:", userId);
+      console.log("DreamForm: Starting credit fetch for user:", userId);
+      setIsLoadingCredits(true);
       const fetchedCredits = await DreamService.fetchCredits(userId);
       console.log("DreamForm: Credits fetched successfully:", fetchedCredits);
       setCredits(fetchedCredits);
@@ -39,6 +40,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   };
 
   useEffect(() => {
+    console.log("DreamForm: useEffect triggered with userId:", userId);
     if (userId) {
       fetchCredits();
     }
