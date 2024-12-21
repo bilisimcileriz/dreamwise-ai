@@ -16,35 +16,25 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const [dream, setDream] = useState("");
   const [interpretation, setInterpretation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [credits, setCredits] = useState<number>(0);
-  const [isLoadingCredits, setIsLoadingCredits] = useState(true);
+  const [credits, setCredits] = useState<number | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCredits();
+  }, [userId]);
 
   const fetchCredits = async () => {
     try {
-      console.log("DreamForm: Starting credit fetch for user:", userId);
-      setIsLoadingCredits(true);
-      const fetchedCredits = await DreamService.fetchCredits(userId);
-      console.log("DreamForm: Credits fetched successfully:", fetchedCredits);
-      setCredits(fetchedCredits);
+      const credits = await DreamService.fetchCredits(userId);
+      setCredits(credits);
     } catch (error) {
-      console.error("DreamForm: Credit fetch error:", error);
       toast({
         title: "Error",
-        description: "Failed to load credits. Please try again later.",
+        description: "Failed to fetch credits. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoadingCredits(false);
     }
   };
-
-  useEffect(() => {
-    console.log("DreamForm: useEffect triggered with userId:", userId);
-    if (userId) {
-      fetchCredits();
-    }
-  }, [userId]);
 
   const handleDreamSubmit = async () => {
     if (!dream.trim()) {
@@ -56,7 +46,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       return;
     }
 
-    if (credits < 1) {
+    if (!credits || credits < 1) {
       toast({
         title: "Insufficient Credits",
         description: "You need at least 1 credit to interpret a dream",
@@ -67,18 +57,20 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     setIsLoading(true);
     try {
-      console.log("DreamForm: Starting dream interpretation");
+      // Create initial dream record with pending status
       await DreamService.createOrUpdateDream(userId, dream, 'pending');
-      
+
+      // Get interpretation from AI
       const interpretation = await DreamService.interpretDream(dream);
-      console.log("DreamForm: Dream interpreted successfully");
       
+      // Update dream record with success status and interpretation
       await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
       
+      // Deduct credit after successful interpretation
       const newCredits = await DreamService.deductCredit(userId, credits);
-      console.log("DreamForm: Credits updated:", newCredits);
-      
       setCredits(newCredits);
+      
+      // Update UI with interpretation
       setInterpretation(interpretation);
       
       toast({
@@ -86,14 +78,13 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Your dream has been interpreted",
       });
     } catch (error) {
-      console.error("DreamForm: Interpretation error:", error);
+      console.error("Error:", error);
       await DreamService.createOrUpdateDream(userId, dream, 'failed');
       toast({
         title: "Error",
         description: "Failed to interpret your dream. Please try again.",
         variant: "destructive",
       });
-      fetchCredits();
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +94,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-white">Interpret Your Dream</h2>
-        <CreditsDisplay credits={credits} isLoading={isLoadingCredits} />
+        <CreditsDisplay credits={credits} />
       </div>
 
       <div className="space-y-4">
@@ -111,7 +102,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         <Button
           onClick={handleDreamSubmit}
           className="w-full bg-purple-600 hover:bg-purple-700"
-          disabled={isLoading || credits < 1 || isLoadingCredits}
+          disabled={isLoading || !credits || credits < 1}
         >
           {isLoading ? (
             <>
