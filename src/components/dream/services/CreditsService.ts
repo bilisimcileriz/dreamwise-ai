@@ -2,83 +2,86 @@ import { supabase } from "@/integrations/supabase/client";
 import { LogService } from "../LogService";
 
 export class CreditsService {
-  static async fetchCredits(userId: string) {
+  static async fetchCredits(userId: string): Promise<number> {
     try {
-      const startTime = Date.now();
-      const { data, error } = await supabase
+      console.log("CreditsService: Starting credit fetch for user:", userId);
+      
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
         .maybeSingle();
 
-      const endTime = Date.now();
-
-      // Log the API request details
-      await LogService.createLog(userId, 'API_REQUEST', {
-        operation: 'FETCH_CREDITS',
-        request: {
-          endpoint: 'profiles',
-          method: 'SELECT',
-          params: { userId }
-        },
-        response: {
-          success: !error,
-          data: data,
-          error: error,
-          duration_ms: endTime - startTime
-        }
-      });
-
       if (error) {
-        console.error("Error fetching credits:", error);
-        throw error;
+        console.error("CreditsService: Database error:", error);
+        throw new Error(`Database error: ${error.message}`);
       }
 
-      console.log("Current credits:", data?.credits);
-      return data?.credits;
+      console.log("CreditsService: Profile data received:", profile);
+
+      // If no profile exists, return default credits
+      if (!profile) {
+        console.log("CreditsService: No profile found, creating new profile with default credits");
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, credits: 5 })
+          .select('credits')
+          .single();
+
+        if (insertError) {
+          console.error("CreditsService: Error creating profile:", insertError);
+          throw new Error(`Failed to create profile: ${insertError.message}`);
+        }
+
+        console.log("CreditsService: New profile created with credits:", newProfile?.credits);
+        return newProfile?.credits ?? 5;
+      }
+
+      const credits = profile.credits ?? 5;
+      console.log("CreditsService: Returning credits:", credits);
+      return credits;
+
     } catch (error) {
-      console.error("Error in fetchCredits:", error);
+      console.error("CreditsService: Unexpected error:", error);
       throw error;
     }
   }
 
-  static async deductCredit(userId: string, currentCredits: number) {
+  static async deductCredit(userId: string, currentCredits: number): Promise<number> {
     try {
-      const startTime = Date.now();
-      const { error } = await supabase
-        .from('profiles')
-        .update({ credits: currentCredits - 1 })
-        .eq('id', userId);
-
-      const endTime = Date.now();
-
-      if (error) {
-        console.error("Error deducting credit:", error);
-        throw error;
+      console.log("CreditsService: Starting credit deduction for user:", userId, "current credits:", currentCredits);
+      
+      if (currentCredits <= 0) {
+        console.error("CreditsService: Insufficient credits");
+        throw new Error("Insufficient credits");
       }
 
-      // Log credit deduction with detailed API info
+      const newCredits = currentCredits - 1;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ credits: newCredits })
+        .eq('id', userId)
+        .select('credits')
+        .single();
+
+      if (error) {
+        console.error("CreditsService: Deduction error:", error);
+        throw new Error(`Failed to deduct credit: ${error.message}`);
+      }
+
+      console.log("CreditsService: Credit deducted successfully, new balance:", newCredits);
+      
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
-        new_credits: currentCredits - 1,
-        action: 'dream_interpretation',
-        api_details: {
-          operation: 'UPDATE_CREDITS',
-          request: {
-            endpoint: 'profiles',
-            method: 'UPDATE',
-            params: { userId, newCredits: currentCredits - 1 }
-          },
-          performance: {
-            duration_ms: endTime - startTime
-          }
-        }
+        new_credits: newCredits,
+        action: 'dream_interpretation'
       });
 
-      console.log("Credit deducted. Remaining credits:", currentCredits - 1);
-      return currentCredits - 1;
+      return newCredits;
+
     } catch (error) {
-      console.error("Error in deductCredit:", error);
+      console.error("CreditsService: Deduction failed:", error);
       throw error;
     }
   }
