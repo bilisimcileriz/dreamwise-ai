@@ -15,7 +15,6 @@ export type Database = {
           dream_text: string
           id: string
           interpretation: string | null
-          status: string
           updated_at: string
           user_id: string
         }
@@ -24,7 +23,6 @@ export type Database = {
           dream_text: string
           id?: string
           interpretation?: string | null
-          status?: string
           updated_at?: string
           user_id: string
         }
@@ -33,45 +31,12 @@ export type Database = {
           dream_text?: string
           id?: string
           interpretation?: string | null
-          status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "dreams_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      operation_logs: {
-        Row: {
-          created_at: string
-          details: Json
-          id: string
-          operation_type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          details: Json
-          id?: string
-          operation_type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          details?: Json
-          id?: string
-          operation_type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operation_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
