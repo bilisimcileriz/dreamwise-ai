@@ -15,7 +15,6 @@ export type Database = {
           dream_text: string
           id: string
           interpretation: string | null
-          status: string
           updated_at: string
           user_id: string
         }
@@ -24,7 +23,6 @@ export type Database = {
           dream_text: string
           id?: string
           interpretation?: string | null
-          status?: string
           updated_at?: string
           user_id: string
         }
@@ -33,7 +31,6 @@ export type Database = {
           dream_text?: string
           id?: string
           interpretation?: string | null
-          status?: string
           updated_at?: string
           user_id?: string
         }

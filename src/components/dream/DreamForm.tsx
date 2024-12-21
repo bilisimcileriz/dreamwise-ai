@@ -85,28 +85,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         throw insertError;
       }
       
+      // Fetch credits after creating profile to get the default value
       await fetchCredits();
-    }
-  };
-
-  const logDream = async (dreamText: string, status: 'pending' | 'success' | 'failed') => {
-    console.log(`Logging dream with status: ${status}`);
-    const { error } = await supabase
-      .from('dreams')
-      .insert({
-        user_id: userId,
-        dream_text: dreamText,
-        status: status,
-        interpretation: status === 'success' ? interpretation : null
-      });
-
-    if (error) {
-      console.error("Error logging dream:", error);
-      toast({
-        title: "Warning",
-        description: "Failed to log dream request, but interpretation was successful.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -134,9 +114,6 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       console.log("Submitting dream for user:", userId);
       
       await ensureProfile(userId);
-      
-      // Log initial dream submission
-      await logDream(dream, 'pending');
 
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('interpret-dream', {
@@ -144,7 +121,6 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       });
 
       if (error) {
-        await logDream(dream, 'failed');
         throw error;
       }
 
@@ -153,10 +129,6 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
       console.log("Received interpretation:", data);
       setInterpretation(data.interpretation);
-      
-      // Log successful interpretation
-      await logDream(dream, 'success');
-
       toast({
         title: "Success",
         description: "Your dream has been interpreted",
