@@ -16,18 +16,11 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const [dream, setDream] = useState("");
   const [interpretation, setInterpretation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
+  const [credits, setCredits] = useState<number>(0);
   const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const { toast } = useToast();
 
   const fetchCredits = async () => {
-    if (!userId) {
-      console.error("DreamForm: No userId provided");
-      setIsLoadingCredits(false);
-      setCredits(0);
-      return;
-    }
-
     try {
       console.log("DreamForm: Fetching credits for user:", userId);
       const fetchedCredits = await DreamService.fetchCredits(userId);
@@ -35,7 +28,6 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       setCredits(fetchedCredits);
     } catch (error) {
       console.error("DreamForm: Credit fetch error:", error);
-      setCredits(0);
       toast({
         title: "Error",
         description: "Failed to load credits. Please try again later.",
@@ -47,7 +39,6 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   };
 
   useEffect(() => {
-    console.log("DreamForm: Initial mount with userId:", userId);
     if (userId) {
       fetchCredits();
     }
@@ -63,7 +54,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       return;
     }
 
-    if (!credits || credits < 1) {
+    if (credits < 1) {
       toast({
         title: "Insufficient Credits",
         description: "You need at least 1 credit to interpret a dream",
@@ -118,7 +109,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         <Button
           onClick={handleDreamSubmit}
           className="w-full bg-purple-600 hover:bg-purple-700"
-          disabled={isLoading || !credits || credits < 1 || isLoadingCredits}
+          disabled={isLoading || credits < 1 || isLoadingCredits}
         >
           {isLoading ? (
             <>

@@ -6,51 +6,21 @@ export class CreditsService {
     try {
       console.log("CreditsService: Starting credit fetch for user:", userId);
       
-      // Validate session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log("CreditsService: Session check:", { session: sessionData?.session, error: sessionError });
-      
-      if (sessionError) {
-        console.error("CreditsService: Session error:", sessionError);
-        throw new Error("Authentication error");
-      }
-
-      if (!sessionData.session) {
-        console.error("CreditsService: No active session");
-        throw new Error("No active session");
-      }
-
-      // Fetch credits
       const { data, error } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
         .maybeSingle();
 
-      console.log("CreditsService: Credits fetch response:", { data, error });
-
       if (error) {
         console.error("CreditsService: Database error:", error);
         throw new Error(`Database error: ${error.message}`);
       }
 
-      // If no profile exists, create one with default credits
+      // If no profile exists, return default credits
       if (!data) {
-        console.log("CreditsService: No profile found, creating new profile");
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([{ id: userId, credits: 5 }])
-          .select('credits')
-          .single();
-
-        if (createError) {
-          console.error("CreditsService: Profile creation error:", createError);
-          throw new Error(`Failed to create profile: ${createError.message}`);
-        }
-
-        const credits = newProfile?.credits ?? 5;
-        console.log("CreditsService: New profile created with credits:", credits);
-        return credits;
+        console.log("CreditsService: No profile found, returning default credits");
+        return 5;
       }
 
       const credits = data.credits ?? 5;
@@ -71,11 +41,11 @@ export class CreditsService {
       }
 
       console.log("CreditsService: Deducting credit for user:", userId);
-      console.log("CreditsService: Current credits:", currentCredits);
-
+      
+      const newCredits = currentCredits - 1;
       const { data, error } = await supabase
         .from('profiles')
-        .update({ credits: currentCredits - 1 })
+        .update({ credits: newCredits })
         .eq('id', userId)
         .select('credits')
         .single();
@@ -85,15 +55,12 @@ export class CreditsService {
         throw new Error(`Failed to deduct credit: ${error.message}`);
       }
 
-      const newCredits = data?.credits ?? (currentCredits - 1);
-      console.log("CreditsService: New credits after deduction:", newCredits);
+      console.log("CreditsService: Credit deducted successfully, new balance:", newCredits);
       
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
         new_credits: newCredits,
         action: 'dream_interpretation'
-      }).catch(logError => {
-        console.error("CreditsService: Log creation error:", logError);
       });
 
       return newCredits;
