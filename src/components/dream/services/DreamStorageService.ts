@@ -13,8 +13,7 @@ export class DreamStorageService {
         .select('id')
         .eq('user_id', userId)
         .eq('dream_text', dreamText)
-        .eq('status', 'pending')
-        .maybeSingle();
+        .eq('status', 'pending');
 
       if (searchError) {
         console.error("Error searching for existing dream:", searchError);
@@ -24,7 +23,7 @@ export class DreamStorageService {
       const dreamData = {
         status,
         interpretation: dreamInterpretation,
-        ...((!existingDreams) && {
+        ...((!existingDreams || existingDreams.length === 0) && {
           user_id: userId,
           dream_text: dreamText,
         })
@@ -34,12 +33,12 @@ export class DreamStorageService {
       let operationType;
       let apiResponse;
 
-      if (existingDreams) {
+      if (existingDreams && existingDreams.length > 0) {
         operationType = 'UPDATE_DREAM';
         const { data, error } = await supabase
           .from('dreams')
           .update(dreamData)
-          .eq('id', existingDreams.id)
+          .eq('id', existingDreams[0].id)
           .select()
           .maybeSingle();
 
@@ -70,7 +69,7 @@ export class DreamStorageService {
       if (result) {
         // Log detailed dream operation
         await LogService.createLog(userId, 'DREAM_OPERATION', {
-          action: existingDreams ? 'update' : 'create',
+          action: existingDreams?.length ? 'update' : 'create',
           dream_id: result.id,
           status,
           has_interpretation: !!dreamInterpretation,
@@ -78,7 +77,7 @@ export class DreamStorageService {
             operation: operationType,
             request: {
               endpoint: 'dreams',
-              method: existingDreams ? 'UPDATE' : 'INSERT',
+              method: existingDreams?.length ? 'UPDATE' : 'INSERT',
               params: dreamData
             },
             response: apiResponse,
