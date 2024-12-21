@@ -7,6 +7,13 @@ export class CreditsService {
       const startTime = Date.now();
       console.log("CreditsService: Starting credit fetch for user:", userId);
       
+      // First check if user is authenticated
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        console.error("CreditsService: No active session found");
+        throw new Error("User not authenticated");
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('credits')
