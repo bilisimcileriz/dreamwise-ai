@@ -16,6 +16,7 @@ serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!dreamText) {
+      console.error('Dream text is required');
       return new Response(
         JSON.stringify({ error: 'Dream text is required' }), 
         { 
@@ -25,6 +26,7 @@ serve(async (req) => {
       );
     }
 
+    console.log('Calling OpenAI API with dream text:', dreamText);
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -32,7 +34,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -65,8 +67,14 @@ Structure your response in this format:
     });
 
     const data = await response.json();
-    const interpretation = data.choices[0].message.content;
+    console.log('Received response from OpenAI:', data);
 
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid response from OpenAI:', data);
+      throw new Error('Invalid response from OpenAI');
+    }
+
+    const interpretation = data.choices[0].message.content;
     return new Response(
       JSON.stringify({ interpretation }), 
       { 
