@@ -6,6 +6,7 @@ import { SubmitButton } from "./SubmitButton";
 import { useCredits } from "@/hooks/useCredits";
 import { useDreamSubmission } from "@/hooks/useDreamSubmission";
 import { DreamHeader } from "./DreamHeader";
+import { toast } from "@/hooks/use-toast";
 
 interface DreamFormProps {
   userId: string;
