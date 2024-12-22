@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import { DreamInput } from "./DreamInput";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { InterpretationDisplay } from "./InterpretationDisplay";
+import { SubmitButton } from "./SubmitButton";
 import { DreamService } from "./DreamService";
 
 interface DreamFormProps {
@@ -108,20 +107,11 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
       <div className="space-y-4">
         <DreamInput dream={dream} onChange={setDream} />
-        <Button
+        <SubmitButton
+          isLoading={isLoading}
+          disabled={credits < 1 || isLoadingCredits}
           onClick={handleDreamSubmit}
-          className="w-full bg-purple-600 hover:bg-purple-700"
-          disabled={isLoading || credits < 1 || isLoadingCredits}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Interpreting...
-            </>
-          ) : (
-            "Interpret Dream (1 credit)"
-          )}
-        </Button>
+        />
       </div>
 
       <InterpretationDisplay interpretation={interpretation} />
