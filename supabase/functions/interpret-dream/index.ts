@@ -34,7 +34,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -63,8 +63,15 @@ Structure your response in this format:
             content: dreamText
           }
         ],
+        temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
+
+    if (!response.ok) {
+      console.error('OpenAI API error:', await response.text());
+      throw new Error('Failed to get response from OpenAI');
+    }
 
     const data = await response.json();
     console.log('Received response from OpenAI:', data);
@@ -84,7 +91,7 @@ Structure your response in this format:
   } catch (error) {
     console.error('Error interpreting dream:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to interpret dream' }), 
+      JSON.stringify({ error: 'Failed to interpret dream', details: error.message }), 
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
