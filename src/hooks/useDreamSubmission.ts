@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { DreamService } from "@/components/dream/DreamService";
 
-export const useDreamSubmission = (userId: string, deductCredit: () => Promise<boolean>) => {
+export const useDreamSubmission = (userId: string) => {
   const [interpretation, setInterpretation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -26,11 +26,6 @@ export const useDreamSubmission = (userId: string, deductCredit: () => Promise<b
       console.log("useDreamSubmission: Dream interpreted successfully");
       
       await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
-      
-      const success = await deductCredit();
-      if (!success) {
-        throw new Error("Failed to deduct credit");
-      }
       
       setInterpretation(interpretation);
       

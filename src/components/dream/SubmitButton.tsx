@@ -16,7 +16,7 @@ export const SubmitButton = ({ isLoading, disabled, onClick }: SubmitButtonProps
     {isLoading ? (
       <LoadingState message="Interpreting..." />
     ) : (
-      "Interpret Dream (1 credit)"
+      "Interpret Dream"
     )}
   </Button>
 );
