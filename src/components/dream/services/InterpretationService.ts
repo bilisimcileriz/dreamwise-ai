@@ -18,7 +18,7 @@ export class InterpretationService {
         throw new Error(`Failed to interpret dream: ${error.message}`);
       }
 
-      if (!data || !data.interpretation) {
+      if (!data?.interpretation) {
         console.error("Invalid response from interpret-dream function:", data);
         throw new Error("Invalid response from dream interpretation service");
       }

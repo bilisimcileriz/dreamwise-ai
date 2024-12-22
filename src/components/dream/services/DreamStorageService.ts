@@ -10,7 +10,7 @@ export class DreamStorageService {
       // First try to find an existing pending dream
       const { data: existingDreams, error: searchError } = await supabase
         .from('dreams')
-        .select('id')
+        .select()
         .eq('user_id', userId)
         .eq('dream_text', dreamText)
         .eq('status', 'pending')

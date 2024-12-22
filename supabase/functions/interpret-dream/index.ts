@@ -6,6 +6,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -14,14 +15,28 @@ serve(async (req) => {
     const { dreamText } = await req.json()
     
     if (!dreamText) {
-      throw new Error('Dream text is required')
+      console.error('Dream text is missing')
+      return new Response(
+        JSON.stringify({ error: 'Dream text is required' }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     console.log('Received dream text:', dreamText)
     
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured')
+      console.error('OpenAI API key not configured')
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     console.log('Making request to OpenAI API...')
@@ -33,7 +48,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -61,14 +76,27 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error('OpenAI API error:', await response.text())
-      throw new Error('Failed to get response from OpenAI')
+      return new Response(
+        JSON.stringify({ error: 'Failed to get response from OpenAI' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     const data = await response.json()
     console.log('Received response from OpenAI:', data)
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response format from OpenAI')
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid response format from OpenAI:', data)
+      return new Response(
+        JSON.stringify({ error: 'Invalid response format from OpenAI' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     const interpretation = data.choices[0].message.content
@@ -84,7 +112,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error interpreting dream:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to interpret dream', details: error.message }), 
+      JSON.stringify({ 
+        error: 'Failed to interpret dream', 
+        details: error.message 
+      }), 
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
