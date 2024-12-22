@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import { DreamInput } from "./DreamInput";
-import { CreditsDisplay } from "./CreditsDisplay";
 import { InterpretationDisplay } from "./InterpretationDisplay";
 import { SubmitButton } from "./SubmitButton";
-import { DreamService } from "./DreamService";
 import { useCredits } from "@/hooks/useCredits";
+import { useDreamSubmission } from "@/hooks/useDreamSubmission";
+import { DreamHeader } from "./DreamHeader";
 
 interface DreamFormProps {
   userId: string;
@@ -14,21 +13,10 @@ interface DreamFormProps {
 
 export const DreamForm = ({ userId }: DreamFormProps) => {
   const [dream, setDream] = useState("");
-  const [interpretation, setInterpretation] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const { credits, isLoading: isLoadingCredits, deductCredit } = useCredits(userId);
-  const { toast } = useToast();
+  const { interpretation, isLoading, submitDream } = useDreamSubmission(userId, deductCredit);
 
   const handleDreamSubmit = async () => {
-    if (!dream.trim()) {
-      toast({
-        title: "Error",
-        description: "Please describe your dream",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (credits < 1) {
       toast({
         title: "Insufficient Credits",
@@ -37,47 +25,12 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       });
       return;
     }
-
-    setIsLoading(true);
-    try {
-      console.log("DreamForm: Starting dream interpretation");
-      await DreamService.createOrUpdateDream(userId, dream, 'pending');
-      
-      const interpretation = await DreamService.interpretDream(dream);
-      console.log("DreamForm: Dream interpreted successfully");
-      
-      await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
-      
-      const success = await deductCredit();
-      if (!success) {
-        throw new Error("Failed to deduct credit");
-      }
-      
-      setInterpretation(interpretation);
-      
-      toast({
-        title: "Success",
-        description: "Your dream has been interpreted",
-      });
-    } catch (error) {
-      console.error("DreamForm: Interpretation error:", error);
-      await DreamService.createOrUpdateDream(userId, dream, 'failed');
-      toast({
-        title: "Error",
-        description: "Failed to interpret your dream. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await submitDream(dream);
   };
 
   return (
     <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-white">Interpret Your Dream</h2>
-        <CreditsDisplay credits={credits} isLoading={isLoadingCredits} />
-      </div>
+      <DreamHeader credits={credits} isLoadingCredits={isLoadingCredits} />
 
       <div className="space-y-4">
         <DreamInput dream={dream} onChange={setDream} />
