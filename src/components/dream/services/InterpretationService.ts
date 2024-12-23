@@ -20,7 +20,7 @@ export class InterpretationService {
 
       if (!data?.interpretation) {
         console.error("Invalid response from interpret-dream function:", data);
-        throw new Error("Invalid response from dream interpretation service");
+        throw new Error("No interpretation received from the service");
       }
 
       console.log("Received interpretation:", data.interpretation);

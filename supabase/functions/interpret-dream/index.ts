@@ -48,7 +48,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -75,9 +75,10 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      console.error('OpenAI API error:', await response.text())
+      const errorText = await response.text()
+      console.error('OpenAI API error:', errorText)
       return new Response(
-        JSON.stringify({ error: 'Failed to get response from OpenAI' }), 
+        JSON.stringify({ error: 'Failed to get response from OpenAI', details: errorText }), 
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
