@@ -13,6 +13,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Received request to interpret dream");
     const { dreamText } = await req.json();
     
     if (!dreamText) {
@@ -26,7 +27,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Received dream text:', dreamText);
+    console.log('Received dream text length:', dreamText.length);
     
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
@@ -42,37 +43,41 @@ serve(async (req) => {
 
     console.log('Making request to OpenAI API...');
     
+    const openAIRequest = {
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `You are a skilled dream interpreter with deep knowledge of psychology, symbolism, and dream analysis. 
+                   Your task is to provide thoughtful, insightful interpretations of dreams while being mindful of the 
+                   following guidelines:
+                   
+                   1. Consider both universal symbols and personal context
+                   2. Offer multiple possible interpretations when appropriate
+                   3. Be sensitive and professional in your analysis
+                   4. Focus on constructive insights
+                   5. Acknowledge the subjective nature of dream interpretation
+                   
+                   Format your response in clear paragraphs with proper spacing for readability.`
+        },
+        {
+          role: "user",
+          content: dreamText
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    };
+
+    console.log('OpenAI request configuration:', JSON.stringify(openAIRequest, null, 2));
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are a skilled dream interpreter with deep knowledge of psychology, symbolism, and dream analysis. 
-                     Your task is to provide thoughtful, insightful interpretations of dreams while being mindful of the 
-                     following guidelines:
-                     
-                     1. Consider both universal symbols and personal context
-                     2. Offer multiple possible interpretations when appropriate
-                     3. Be sensitive and professional in your analysis
-                     4. Focus on constructive insights
-                     5. Acknowledge the subjective nature of dream interpretation
-                     
-                     Format your response in clear paragraphs with proper spacing for readability.`
-          },
-          {
-            role: "user",
-            content: dreamText
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
+      body: JSON.stringify(openAIRequest),
     });
 
     if (!response.ok) {
@@ -88,7 +93,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Received response from OpenAI:', data);
+    console.log('Received response from OpenAI');
 
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid response format from OpenAI:', data);
@@ -102,7 +107,7 @@ serve(async (req) => {
     }
 
     const interpretation = data.choices[0].message.content;
-    console.log('Extracted interpretation:', interpretation);
+    console.log('Successfully extracted interpretation, length:', interpretation.length);
 
     return new Response(
       JSON.stringify({ interpretation }), 
@@ -113,10 +118,12 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error interpreting dream:', error);
+    console.error('Error stack:', error.stack);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to interpret dream', 
-        details: error.message 
+        details: error.message,
+        stack: error.stack
       }), 
       { 
         status: 500,
