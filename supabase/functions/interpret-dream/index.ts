@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Received request to interpret dream");
+    console.log("Starting dream interpretation process");
     const { dreamText } = await req.json();
     
     if (!dreamText) {
@@ -27,10 +27,8 @@ serve(async (req) => {
       );
     }
 
-    console.log('Received dream text length:', dreamText.length);
-    
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }), 
@@ -42,6 +40,7 @@ serve(async (req) => {
     }
 
     console.log('Making request to OpenAI API...');
+    console.log('Dream text length:', dreamText.length);
     
     const openAIRequest = {
       model: "gpt-4",
@@ -69,12 +68,12 @@ serve(async (req) => {
       max_tokens: 2000,
     };
 
-    console.log('OpenAI request configuration:', JSON.stringify(openAIRequest, null, 2));
+    console.log('OpenAI request configuration prepared');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(openAIRequest),
@@ -117,7 +116,7 @@ serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error('Error interpreting dream:', error);
+    console.error('Error in interpret-dream function:', error);
     console.error('Error stack:', error.stack);
     return new Response(
       JSON.stringify({ 
