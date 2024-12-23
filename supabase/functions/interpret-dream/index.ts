@@ -1,5 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,17 +7,15 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Starting dream interpretation process...");
     const { dreamText } = await req.json();
-    
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
     if (!dreamText) {
-      console.error("Dream text is missing");
       return new Response(
         JSON.stringify({ error: 'Dream text is required' }), 
         { 
@@ -26,21 +24,6 @@ serve(async (req) => {
         }
       );
     }
-
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.error("OpenAI API key not found");
-      return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }), 
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    console.log("Making request to OpenAI API...");
-    console.log("Dream text length:", dreamText.length);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -53,73 +36,47 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a skilled dream interpreter with deep knowledge of psychology, symbolism, and dream analysis. 
-                     Your task is to provide thoughtful, insightful interpretations of dreams while being mindful of the 
-                     following guidelines:
-                     
-                     1. Consider both universal symbols and personal context
-                     2. Offer multiple possible interpretations when appropriate
-                     3. Be sensitive and professional in your analysis
-                     4. Focus on constructive insights
-                     5. Acknowledge the subjective nature of dream interpretation
-                     
-                     Format your response in clear paragraphs with proper spacing for readability.`
+            content: `You are an expert dream interpreter specializing in psychological dream analysis, particularly focusing on the theories of Sigmund Freud and Carl Jung. 
+
+When interpreting dreams:
+- Answer with the language used in dream text as the answer language.
+- Apply both Freudian psychoanalytic theory and Jungian analytical psychology
+- Consider symbolic meanings from both personal and collective unconscious perspectives
+- Analyze archetypal symbols and their universal meanings
+- Examine potential repressed desires and unconscious motivations
+- Look for connections to the dreamer's psychological development
+- Maintain a professional and insightful tone
+
+Focus exclusively on dream interpretation. Do not engage with any content that isn't a dream description.
+
+Structure your response in this format:
+1. Initial Impression
+2. Key Symbols Analysis
+3. Freudian Perspective
+4. Jungian Analysis
+5. Psychological Insight`
           },
           {
             role: "user",
             content: dreamText
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenAI API error:", errorText);
-      return new Response(
-        JSON.stringify({ error: 'Failed to get response from OpenAI', details: errorText }), 
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
     const data = await response.json();
-    console.log("Received response from OpenAI");
-
-    if (!data.choices?.[0]?.message?.content) {
-      console.error("Invalid response format from OpenAI:", data);
-      return new Response(
-        JSON.stringify({ error: 'Invalid response format from OpenAI' }), 
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
     const interpretation = data.choices[0].message.content;
-    console.log("Successfully extracted interpretation, length:", interpretation.length);
 
     return new Response(
       JSON.stringify({ interpretation }), 
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   } catch (error) {
-    console.error("Error in interpret-dream function:", error);
-    console.error("Error stack:", error.stack);
+    console.error('Error interpreting dream:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to interpret dream', 
-        details: error.message,
-        stack: error.stack
-      }), 
+      JSON.stringify({ error: 'Failed to interpret dream' }), 
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
