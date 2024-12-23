@@ -13,11 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Starting dream interpretation process");
+    console.log("Starting dream interpretation process...");
     const { dreamText } = await req.json();
     
     if (!dreamText) {
-      console.error('Dream text is missing');
+      console.error("Dream text is missing");
       return new Response(
         JSON.stringify({ error: 'Dream text is required' }), 
         { 
@@ -29,7 +29,7 @@ serve(async (req) => {
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
+      console.error("OpenAI API key not found");
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }), 
         { 
@@ -39,36 +39,8 @@ serve(async (req) => {
       );
     }
 
-    console.log('Making request to OpenAI API...');
-    console.log('Dream text length:', dreamText.length);
-    
-    const openAIRequest = {
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `You are a skilled dream interpreter with deep knowledge of psychology, symbolism, and dream analysis. 
-                   Your task is to provide thoughtful, insightful interpretations of dreams while being mindful of the 
-                   following guidelines:
-                   
-                   1. Consider both universal symbols and personal context
-                   2. Offer multiple possible interpretations when appropriate
-                   3. Be sensitive and professional in your analysis
-                   4. Focus on constructive insights
-                   5. Acknowledge the subjective nature of dream interpretation
-                   
-                   Format your response in clear paragraphs with proper spacing for readability.`
-        },
-        {
-          role: "user",
-          content: dreamText
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
-    };
-
-    console.log('OpenAI request configuration prepared');
+    console.log("Making request to OpenAI API...");
+    console.log("Dream text length:", dreamText.length);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -76,12 +48,36 @@ serve(async (req) => {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(openAIRequest),
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a skilled dream interpreter with deep knowledge of psychology, symbolism, and dream analysis. 
+                     Your task is to provide thoughtful, insightful interpretations of dreams while being mindful of the 
+                     following guidelines:
+                     
+                     1. Consider both universal symbols and personal context
+                     2. Offer multiple possible interpretations when appropriate
+                     3. Be sensitive and professional in your analysis
+                     4. Focus on constructive insights
+                     5. Acknowledge the subjective nature of dream interpretation
+                     
+                     Format your response in clear paragraphs with proper spacing for readability.`
+          },
+          {
+            role: "user",
+            content: dreamText
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
+      console.error("OpenAI API error:", errorText);
       return new Response(
         JSON.stringify({ error: 'Failed to get response from OpenAI', details: errorText }), 
         { 
@@ -92,10 +88,10 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Received response from OpenAI');
+    console.log("Received response from OpenAI");
 
     if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid response format from OpenAI:', data);
+      console.error("Invalid response format from OpenAI:", data);
       return new Response(
         JSON.stringify({ error: 'Invalid response format from OpenAI' }), 
         { 
@@ -106,7 +102,7 @@ serve(async (req) => {
     }
 
     const interpretation = data.choices[0].message.content;
-    console.log('Successfully extracted interpretation, length:', interpretation.length);
+    console.log("Successfully extracted interpretation, length:", interpretation.length);
 
     return new Response(
       JSON.stringify({ interpretation }), 
@@ -116,8 +112,8 @@ serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error('Error in interpret-dream function:', error);
-    console.error('Error stack:', error.stack);
+    console.error("Error in interpret-dream function:", error);
+    console.error("Error stack:", error.stack);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to interpret dream', 
