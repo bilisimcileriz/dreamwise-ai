@@ -5,8 +5,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Security-Policy': "frame-ancestors 'self' https://*.lovableproject.com",
-  'X-Frame-Options': 'ALLOW-FROM https://*.lovableproject.com'
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Content-Type': 'application/json'
 }
 
 // Create a Supabase client
@@ -31,7 +33,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'No dream text provided' }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           status: 400
         }
       )
@@ -43,7 +45,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           status: 500
         }
       )
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ interpretation }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         status: 200
       }
     )
@@ -94,7 +96,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: error.message }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         status: 500
       }
     )
