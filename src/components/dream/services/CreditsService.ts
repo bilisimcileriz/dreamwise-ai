@@ -12,7 +12,7 @@ export class CreditsService {
         .from('profiles')
         .select('credits')
         ;
-
+         console.log("sssssr:", userId);
       if (profileError && profileError.code === 'PGRST116') {
         // Profile doesn't exist, create one with default credits
         console.log("Profile not found, creating new profile with default credits");
