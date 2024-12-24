@@ -5,15 +5,17 @@ export class CreditsService {
   static async fetchCredits(userId: string) {
     try {
       const startTime = Date.now();
-      console.log("Fetching credits for user:", userId);
+      console.log("Starting credits fetch for user:", userId);
       
-      const { data, error } = await supabase
+      const { data, error, status } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       const endTime = Date.now();
+      console.log("Credits fetch completed in", endTime - startTime, "ms");
+      console.log("Response status:", status);
 
       // Log the API request details
       await LogService.createLog(userId, 'API_REQUEST', {
@@ -27,6 +29,7 @@ export class CreditsService {
           success: !error,
           data: data,
           error: error,
+          status: status,
           duration_ms: endTime - startTime
         }
       });
@@ -37,15 +40,16 @@ export class CreditsService {
       }
 
       if (data === null) {
-        console.error("No profile found for user:", userId);
-        throw new Error("User profile not found");
+        console.log("No profile found for user:", userId);
+        return 0; // Return 0 credits if no profile exists
       }
 
-      console.log("Current credits:", data.credits);
-      return data.credits;
+      console.log("Successfully fetched credits:", data.credits);
+      return data.credits ?? 0; // Return 0 if credits is null
     } catch (error) {
-      console.error("Error in fetchCredits:", error);
-      throw error;
+      console.error("Critical error in fetchCredits:", error);
+      // Log the error but return a default value to prevent UI breaking
+      return 0;
     }
   }
 
@@ -56,16 +60,17 @@ export class CreditsService {
       }
 
       const startTime = Date.now();
-      console.log("Deducting credit for user:", userId, "Current credits:", currentCredits);
+      console.log("Starting credit deduction for user:", userId);
 
       const { data, error } = await supabase
         .from('profiles')
         .update({ credits: currentCredits - 1 })
         .eq('id', userId)
         .select('credits')
-        .single();
+        .maybeSingle();
 
       const endTime = Date.now();
+      console.log("Credit deduction completed in", endTime - startTime, "ms");
 
       if (error) {
         console.error("Error deducting credit:", error);
@@ -90,10 +95,10 @@ export class CreditsService {
         }
       });
 
-      console.log("Credit deducted. New credits:", data?.credits);
+      console.log("Credit deducted successfully. New credits:", data?.credits);
       return data?.credits ?? (currentCredits - 1);
     } catch (error) {
-      console.error("Error in deductCredit:", error);
+      console.error("Critical error in deductCredit:", error);
       throw error;
     }
   }
