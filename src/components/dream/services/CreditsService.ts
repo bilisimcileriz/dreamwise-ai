@@ -7,6 +7,31 @@ export class CreditsService {
       const startTime = Date.now();
       console.log("Starting credits fetch for user:", userId);
       
+      // First check if profile exists
+      const { data: profileExists, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error checking profile:", profileError);
+        return 0;
+      }
+
+      if (!profileExists) {
+        console.log("No profile found, creating new profile for user:", userId);
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId });
+
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          return 0;
+        }
+      }
+
+      // Now fetch credits
       const { data, error, status } = await supabase
         .from('profiles')
         .select('credits')
@@ -36,19 +61,13 @@ export class CreditsService {
 
       if (error) {
         console.error("Error fetching credits:", error);
-        throw new Error(`Failed to fetch credits: ${error.message}`);
+        return 0;
       }
 
-      if (data === null) {
-        console.log("No profile found for user:", userId);
-        return 0; // Return 0 credits if no profile exists
-      }
-
-      console.log("Successfully fetched credits:", data.credits);
-      return data.credits ?? 0; // Return 0 if credits is null
+      console.log("Successfully fetched credits:", data?.credits);
+      return data?.credits ?? 5; // Return default 5 credits if credits is null
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
-      // Log the error but return a default value to prevent UI breaking
       return 0;
     }
   }
