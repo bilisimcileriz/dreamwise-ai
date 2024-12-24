@@ -10,7 +10,7 @@ export class CreditsService {
       // First check if profile exists
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('credits').eq('id', userId)
+        .select('credits')
         ;
 
       if (profileError && profileError.code === 'PGRST116') {
