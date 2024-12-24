@@ -8,67 +8,54 @@ export class CreditsService {
       console.log("Starting credits fetch for user:", userId);
       
       // First check if profile exists
-      const { data: profileExists, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Error checking profile:", profileError);
-        return 0;
-      }
-
-      if (!profileExists) {
-        console.log("No profile found, creating new profile for user:", userId);
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({ id: userId });
-
-        if (insertError) {
-          console.error("Error creating profile:", insertError);
-          return 0;
-        }
-      }
-
-      // Now fetch credits
-      const { data, error, status } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
-      const endTime = Date.now();
-      console.log("Credits fetch completed in", endTime - startTime, "ms");
-      console.log("Response status:", status);
+      if (profileError && profileError.code === 'PGRST116') {
+        // Profile doesn't exist, create one with default credits
+        console.log("Profile not found, creating new profile with default credits");
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, credits: 5 })
+          .select('credits')
+          .single();
 
-      // Log the API request details
-      await LogService.createLog(userId, 'API_REQUEST', {
-        operation: 'FETCH_CREDITS',
-        request: {
-          endpoint: 'profiles',
-          method: 'SELECT',
-          params: { userId }
-        },
-        response: {
-          success: !error,
-          data: data,
-          error: error,
-          status: status,
-          duration_ms: endTime - startTime
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          throw insertError;
         }
-      });
 
-      if (error) {
-        console.error("Error fetching credits:", error);
-        return 0;
+        const endTime = Date.now();
+        console.log("New profile created with credits:", newProfile?.credits);
+        
+        await LogService.createLog(userId, 'PROFILE_CREATION', {
+          credits: newProfile?.credits,
+          duration_ms: endTime - startTime
+        });
+
+        return newProfile?.credits ?? 5;
       }
 
-      console.log("Successfully fetched credits:", data?.credits);
-      return data?.credits ?? 5; // Return default 5 credits if credits is null
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        throw profileError;
+      }
+
+      const endTime = Date.now();
+      console.log("Successfully fetched credits:", profile?.credits);
+
+      await LogService.createLog(userId, 'CREDITS_FETCH', {
+        credits: profile?.credits,
+        duration_ms: endTime - startTime
+      });
+
+      return profile?.credits ?? 5;
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
-      return 0;
+      throw error;
     }
   }
 
