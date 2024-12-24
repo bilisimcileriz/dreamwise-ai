@@ -8,7 +8,7 @@ export class CreditsService {
       console.log("Starting credits fetch for user:", userId);
       
       // First check if profile exists
-      const { data: profile, error: profileError } = await supabase
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('credits').eq('id', userId)
         ; 
