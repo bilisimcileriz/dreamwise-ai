@@ -11,8 +11,7 @@ export class CreditsService {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
-        .eq('id', userId)
-        .single();
+        ;
 
       if (profileError && profileError.code === 'PGRST116') {
         // Profile doesn't exist, create one with default credits
