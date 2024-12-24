@@ -8,10 +8,10 @@ export class CreditsService {
       console.log("Starting credits fetch for user:", userId);
       
       // First check if profile exists
-      const { data: profile, error: profileError } = await supabase
+     /* const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
-        ;
+        ; */
          console.log("sssssr:", userId);
       if (profileError && profileError.code === 'PGRST116') {
         // Profile doesn't exist, create one with default credits
