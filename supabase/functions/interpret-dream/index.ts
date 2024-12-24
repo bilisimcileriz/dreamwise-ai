@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js'
-import { Configuration, OpenAIApi } from 'openai'
+// Import using Deno-compatible URL
+import { Configuration, OpenAIApi } from "https://esm.sh/openai@4.12.4";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Security-Policy': "frame-ancestors 'self' https://*.lovableproject.com",
   'X-Frame-Options': 'ALLOW-FROM https://*.lovableproject.com'
 }
