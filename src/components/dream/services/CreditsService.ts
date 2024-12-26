@@ -8,13 +8,21 @@ export class CreditsService {
       console.log("Starting credits fetch for user:", userId);
       
       // First check if profile exists
-      const { data: profile, error: profileError } = await supabase
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('credits').eq('id', userId)
-        ; 
-         console.log("sssssr:", userId);
-      if (profileError && profileError.code === 'PGRST116') {
-        // Profile doesn't exist, create one with default credits
+        .select('credits')
+        .eq('id', userId)
+        .limit(1);
+
+      console.log("Profile query result:", { profiles, profileError });
+      
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        throw profileError;
+      }
+
+      // If no profile exists, create one with default credits
+      if (!profiles || profiles.length === 0) {
         console.log("Profile not found, creating new profile with default credits");
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
@@ -38,20 +46,15 @@ export class CreditsService {
         return newProfile?.credits ?? 5;
       }
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        throw profileError;
-      }
-
       const endTime = Date.now();
-      console.log("Successfully fetched credits:", profile?.credits);
+      console.log("Successfully fetched credits:", profiles[0]?.credits);
 
       await LogService.createLog(userId, 'CREDITS_FETCH', {
-        credits: profile?.credits,
+        credits: profiles[0]?.credits,
         duration_ms: endTime - startTime
       });
 
-      return profile?.credits ?? 5;
+      return profiles[0]?.credits ?? 5;
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
       throw error;
@@ -72,7 +75,7 @@ export class CreditsService {
         .update({ credits: currentCredits - 1 })
         .eq('id', userId)
         .select('credits')
-        .maybeSingle();
+        .single();
 
       const endTime = Date.now();
       console.log("Credit deduction completed in", endTime - startTime, "ms");
