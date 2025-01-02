@@ -7,6 +7,7 @@ export class CreditsService {
       const startTime = Date.now();
       console.log("Starting credits fetch for user:", userId);
       
+      // First try to get the profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
@@ -25,7 +26,7 @@ export class CreditsService {
         console.log("Profile not found, creating new profile with default credits");
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
-          .insert({ id: userId, credits: 5 })
+          .insert([{ id: userId, credits: 5 }])
           .select('credits')
           .single();
 
@@ -76,29 +77,18 @@ export class CreditsService {
         .select('credits')
         .single();
 
-      const endTime = Date.now();
-      console.log("Credit deduction completed in", endTime - startTime, "ms");
-
       if (error) {
         console.error("Error deducting credit:", error);
-        throw new Error(`Failed to deduct credit: ${error.message}`);
+        throw error;
       }
+
+      const endTime = Date.now();
+      console.log("Credit deduction completed in", endTime - startTime, "ms");
 
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
         new_credits: data.credits,
-        action: 'dream_interpretation',
-        api_details: {
-          operation: 'UPDATE_CREDITS',
-          request: {
-            endpoint: 'profiles',
-            method: 'UPDATE',
-            params: { userId, newCredits: currentCredits - 1 }
-          },
-          performance: {
-            duration_ms: endTime - startTime
-          }
-        }
+        duration_ms: endTime - startTime
       });
 
       console.log("Credit deducted successfully. New credits:", data.credits);

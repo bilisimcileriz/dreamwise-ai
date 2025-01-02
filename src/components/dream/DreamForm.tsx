@@ -20,15 +20,19 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Use React Query for credits management
+  // Use React Query for credits management with more aggressive refetching
   const { 
     data: credits, 
     isLoading: isLoadingCredits,
-    error: creditsError 
+    error: creditsError,
+    refetch: refetchCredits
   } = useQuery({
     queryKey: ['credits', userId],
     queryFn: () => DreamService.fetchCredits(userId),
-    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    staleTime: 0, // Always consider data stale
+    cacheTime: 1000 * 60, // Cache for 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     retry: 3,
   });
 
@@ -81,8 +85,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       const newCredits = await DreamService.deductCredit(userId, credits);
       console.log("Credits after deduction:", newCredits);
       
-      // Invalidate credits query to trigger a refresh
-      queryClient.invalidateQueries({ queryKey: ['credits', userId] });
+      // Force a fresh refetch of credits
+      await refetchCredits();
       
       // Update UI with interpretation
       setInterpretation(interpretation);
@@ -99,8 +103,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Failed to interpret your dream. Please try again.",
         variant: "destructive",
       });
-      // Refresh credits in case of error to ensure accurate display
-      queryClient.invalidateQueries({ queryKey: ['credits', userId] });
+      // Force a fresh refetch of credits in case of error
+      await refetchCredits();
     } finally {
       setIsLoading(false);
     }
