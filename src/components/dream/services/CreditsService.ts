@@ -7,14 +7,14 @@ export class CreditsService {
       const startTime = Date.now();
       console.log("Starting credits fetch for user:", userId);
       
-      // First check if profile exists
-      const { data: profiles, error: profileError } = await supabase
+      // Use maybeSingle() instead of select() to properly handle the response
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
         .eq('id', userId)
-        .limit(1);
+        .maybeSingle();
 
-      console.log("Profile query result:", { profiles, profileError });
+      console.log("Profile query result:", { profile, profileError });
       
       if (profileError) {
         console.error("Error fetching profile:", profileError);
@@ -22,7 +22,7 @@ export class CreditsService {
       }
 
       // If no profile exists, create one with default credits
-      if (!profiles || profiles.length === 0) {
+      if (!profile) {
         console.log("Profile not found, creating new profile with default credits");
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
@@ -47,14 +47,14 @@ export class CreditsService {
       }
 
       const endTime = Date.now();
-      console.log("Successfully fetched credits:", profiles[0]?.credits);
+      console.log("Successfully fetched credits:", profile.credits);
 
       await LogService.createLog(userId, 'CREDITS_FETCH', {
-        credits: profiles[0]?.credits,
+        credits: profile.credits,
         duration_ms: endTime - startTime
       });
 
-      return profiles[0]?.credits ?? 5;
+      return profile.credits ?? 5;
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
       throw error;
@@ -85,10 +85,9 @@ export class CreditsService {
         throw new Error(`Failed to deduct credit: ${error.message}`);
       }
 
-      // Log credit deduction with detailed API info
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
-        new_credits: currentCredits - 1,
+        new_credits: data.credits,
         action: 'dream_interpretation',
         api_details: {
           operation: 'UPDATE_CREDITS',
@@ -103,8 +102,8 @@ export class CreditsService {
         }
       });
 
-      console.log("Credit deducted successfully. New credits:", data?.credits);
-      return data?.credits ?? (currentCredits - 1);
+      console.log("Credit deducted successfully. New credits:", data.credits);
+      return data.credits;
     } catch (error) {
       console.error("Critical error in deductCredit:", error);
       throw error;
