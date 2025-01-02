@@ -30,7 +30,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     queryKey: ['credits', userId],
     queryFn: () => DreamService.fetchCredits(userId),
     staleTime: 0, // Always consider data stale
-    cacheTime: 1000 * 60, // Cache for 1 minute
+    gcTime: 1000 * 60, // Cache for 1 minute (formerly cacheTime)
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     retry: 3,
