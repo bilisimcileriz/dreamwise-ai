@@ -7,6 +7,7 @@ import { DreamInput } from "./DreamInput";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { InterpretationDisplay } from "./InterpretationDisplay";
 import { DreamService } from "./DreamService";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface DreamFormProps {
   userId: string;
@@ -16,40 +17,32 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const [dream, setDream] = useState("");
   const [interpretation, setInterpretation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
-  const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchCredits = async () => {
-    try {
-      setIsLoadingCredits(true);
-      const fetchedCredits = await DreamService.fetchCredits(userId);
-      console.log("Fetched credits:", fetchedCredits);
-      
-      if (typeof fetchedCredits !== 'number') {
-        throw new Error("Invalid credits value received");
-      }
-      
-      setCredits(fetchedCredits);
-    } catch (error) {
-      console.error("Error fetching credits:", error);
+  // Use React Query for credits management
+  const { 
+    data: credits, 
+    isLoading: isLoadingCredits,
+    error: creditsError 
+  } = useQuery({
+    queryKey: ['credits', userId],
+    queryFn: () => DreamService.fetchCredits(userId),
+    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    retry: 3,
+  });
+
+  // Handle credits fetch error
+  useEffect(() => {
+    if (creditsError) {
+      console.error("Error fetching credits:", creditsError);
       toast({
         title: "Error",
         description: "Failed to fetch credits. Please try again.",
         variant: "destructive",
       });
-      setCredits(null);
-    } finally {
-      setIsLoadingCredits(false);
     }
-  };
-
-  useEffect(() => {
-    if (userId) {
-      console.log("Fetching credits for user:", userId);
-      fetchCredits();
-    }
-  }, [userId]);
+  }, [creditsError, toast]);
 
   const handleDreamSubmit = async () => {
     if (!dream.trim()) {
@@ -84,10 +77,12 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
       console.log("Updated dream record with interpretation");
       
-      // Deduct credit after successful interpretation
+      // Deduct credit and update credits in UI
       const newCredits = await DreamService.deductCredit(userId, credits);
       console.log("Credits after deduction:", newCredits);
-      setCredits(newCredits);
+      
+      // Invalidate credits query to trigger a refresh
+      queryClient.invalidateQueries({ queryKey: ['credits', userId] });
       
       // Update UI with interpretation
       setInterpretation(interpretation);
@@ -105,7 +100,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         variant: "destructive",
       });
       // Refresh credits in case of error to ensure accurate display
-      fetchCredits();
+      queryClient.invalidateQueries({ queryKey: ['credits', userId] });
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +110,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-white">Interpret Your Dream</h2>
-        <CreditsDisplay credits={credits} isLoading={isLoadingCredits} />
+        <CreditsDisplay credits={credits ?? null} isLoading={isLoadingCredits} />
       </div>
 
       <div className="space-y-4">

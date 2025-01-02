@@ -2,12 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { LogService } from "../LogService";
 
 export class CreditsService {
-  static async fetchCredits(userId: string) {
+  static async fetchCredits(userId: string): Promise<number> {
     try {
       const startTime = Date.now();
       console.log("Starting credits fetch for user:", userId);
       
-      // Use maybeSingle() instead of select() to properly handle the response
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
@@ -61,7 +60,7 @@ export class CreditsService {
     }
   }
 
-  static async deductCredit(userId: string, currentCredits: number) {
+  static async deductCredit(userId: string, currentCredits: number): Promise<number> {
     try {
       if (currentCredits <= 0) {
         throw new Error("Insufficient credits");
