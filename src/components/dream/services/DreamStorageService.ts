@@ -14,7 +14,7 @@ export class DreamStorageService {
         .eq('user_id', userId)
         .eq('dream_text', dreamText)
         .eq('status', 'pending')
-        .maybeSingle();
+        .maybeSingle();  // Changed from .single() to .maybeSingle()
 
       if (searchError) {
         console.error("Error searching for existing dream:", searchError);
@@ -41,7 +41,7 @@ export class DreamStorageService {
           .update(dreamData)
           .eq('id', existingDreams.id)
           .select()
-          .maybeSingle();
+          .maybeSingle();  // Changed from .single() to .maybeSingle()
 
         if (error) {
           console.error("Error updating dream:", error);
@@ -55,7 +55,7 @@ export class DreamStorageService {
           .from('dreams')
           .insert(dreamData)
           .select()
-          .maybeSingle();
+          .maybeSingle();  // Changed from .single() to .maybeSingle()
 
         if (error) {
           console.error("Error creating dream:", error);
