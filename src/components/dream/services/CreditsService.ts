@@ -6,7 +6,7 @@ export class CreditsService {
     try {
       const startTime = Date.now();
       console.log("Starting credits fetch for user:", userId);
-      
+      return 5;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
@@ -23,6 +23,7 @@ export class CreditsService {
       // If no profile exists, create one with default credits
       if (!profile) {
         console.log("Profile not found, creating new profile with default credits");
+        
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert([{ id: userId, credits: 5 }])
