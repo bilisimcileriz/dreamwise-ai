@@ -47,13 +47,16 @@ export class CreditsService {
 
       const endTime = Date.now();
       console.log("Successfully fetched credits:", profile.credits);
+      console.log("Fetch operation completed in", endTime - startTime, "ms");
 
       await LogService.createLog(userId, 'CREDITS_FETCH', {
         credits: profile.credits,
         duration_ms: endTime - startTime
       });
 
-      return profile.credits ?? 5; // Ensure we always return a number, default to 5 if null
+      const finalCredits = profile.credits ?? 5;
+      console.log("Returning credits value:", finalCredits);
+      return finalCredits;
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
       throw error;
@@ -93,7 +96,7 @@ export class CreditsService {
       });
 
       console.log("Credit deducted successfully. New credits:", data?.credits);
-      return data?.credits ?? currentCredits - 1; // Fallback to calculated value if data is null
+      return data?.credits ?? currentCredits - 1;
     } catch (error) {
       console.error("Critical error in deductCredit:", error);
       throw error;
