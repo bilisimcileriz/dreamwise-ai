@@ -47,38 +47,6 @@ export type Database = {
           },
         ]
       }
-      operation_logs: {
-        Row: {
-          created_at: string
-          details: Json
-          id: string
-          operation_type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          details: Json
-          id?: string
-          operation_type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          details?: Json
-          id?: string
-          operation_type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operation_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           created_at: string
