@@ -17,7 +17,7 @@ export const LoginForm = () => {
       
       if (event === "SIGNED_IN") {
       }
-          } else {
+          else {
             console.log("Username updated successfully:", username);
           }
         }
