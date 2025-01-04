@@ -22,6 +22,9 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   }, [userId]);
 
   const fetchCredits = async () => {
+
+    setCredits(5);
+    return 5;
     const { data, error } = await supabase
       .from('profiles')
       .select('credits')
@@ -64,6 +67,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
   const ensureProfile = async (userId: string) => {
     console.log("Checking profile for user:", userId);
+    
     const { data: profile, error: fetchError } = await supabase
       .from('profiles')
       .select('id')
