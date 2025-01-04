@@ -20,23 +20,20 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Use React Query for credits management with more aggressive refetching
   const { 
     data: credits, 
-    isLoading: isLoadingCredits,
     error: creditsError,
     refetch: refetchCredits
   } = useQuery({
     queryKey: ['credits', userId],
     queryFn: () => DreamService.fetchCredits(userId),
-    staleTime: 0, // Always consider data stale
-    gcTime: 1000 * 60, // Cache for 1 minute (formerly cacheTime)
+    staleTime: 0,
+    gcTime: 1000 * 60,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     retry: 3,
   });
 
-  // Handle credits fetch error
   useEffect(() => {
     if (creditsError) {
       console.error("Error fetching credits:", creditsError);
@@ -69,26 +66,20 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
     setIsLoading(true);
     try {
-      // Create initial dream record with pending status
       await DreamService.createOrUpdateDream(userId, dream, 'pending');
       console.log("Created pending dream record");
 
-      // Get interpretation from AI
       const interpretation = await DreamService.interpretDream(dream);
       console.log("Received dream interpretation");
       
-      // Update dream record with success status and interpretation
       await DreamService.createOrUpdateDream(userId, dream, 'success', interpretation);
       console.log("Updated dream record with interpretation");
       
-      // Deduct credit and update credits in UI
       const newCredits = await DreamService.deductCredit(userId, credits);
       console.log("Credits after deduction:", newCredits);
       
-      // Force a fresh refetch of credits
       await refetchCredits();
       
-      // Update UI with interpretation
       setInterpretation(interpretation);
       
       toast({
@@ -103,7 +94,6 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Failed to interpret your dream. Please try again.",
         variant: "destructive",
       });
-      // Force a fresh refetch of credits in case of error
       await refetchCredits();
     } finally {
       setIsLoading(false);
@@ -114,7 +104,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     <Card className="p-6 bg-white/10 backdrop-blur-lg border-purple-500/20">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-white">Interpret Your Dream</h2>
-        <CreditsDisplay credits={credits ?? null} isLoading={isLoadingCredits} />
+        <CreditsDisplay credits={credits ?? null} />
       </div>
 
       <div className="space-y-4">
@@ -122,7 +112,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         <Button
           onClick={handleDreamSubmit}
           className="w-full bg-purple-600 hover:bg-purple-700"
-          disabled={isLoading || !credits || credits < 1 || isLoadingCredits}
+          disabled={isLoading || !credits || credits < 1}
         >
           {isLoading ? (
             <>
