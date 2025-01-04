@@ -53,7 +53,7 @@ export class CreditsService {
         duration_ms: endTime - startTime
       });
 
-      return profile.credits;
+      return profile.credits ?? 5; // Ensure we always return a number, default to 5 if null
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
       throw error;
@@ -86,12 +86,12 @@ export class CreditsService {
 
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
-        new_credits: data?.credits,
+        new_credits: data?.credits ?? 0,
         duration_ms: endTime - startTime
       });
 
       console.log("Credit deducted successfully. New credits:", data?.credits);
-      return data?.credits ?? 0;
+      return data?.credits ?? currentCredits - 1; // Fallback to calculated value if data is null
     } catch (error) {
       console.error("Critical error in deductCredit:", error);
       throw error;
