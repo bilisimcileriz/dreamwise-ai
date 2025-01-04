@@ -23,8 +23,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
 
   const fetchCredits = async () => {
 
-    setCredits(5);
-    return 5;
+   // setCredits(5);
+   //  return 5;
     const { data, error } = await supabase
       .from('profiles')
       .select('credits')
