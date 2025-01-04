@@ -28,8 +28,8 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
     queryKey: ['credits', userId],
     queryFn: () => DreamService.fetchCredits(userId),
     staleTime: 0,
-    gcTime: 1000 * 60,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     retry: 3,
   });
@@ -78,6 +78,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
       const newCredits = await DreamService.deductCredit(userId, credits);
       console.log("Credits after deduction:", newCredits);
       
+      await queryClient.invalidateQueries({ queryKey: ['credits', userId] });
       await refetchCredits();
       
       setInterpretation(interpretation);
@@ -94,6 +95,7 @@ export const DreamForm = ({ userId }: DreamFormProps) => {
         description: "Failed to interpret your dream. Please try again.",
         variant: "destructive",
       });
+      await queryClient.invalidateQueries({ queryKey: ['credits', userId] });
       await refetchCredits();
     } finally {
       setIsLoading(false);

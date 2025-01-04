@@ -7,7 +7,6 @@ export class CreditsService {
       const startTime = Date.now();
       console.log("Starting credits fetch for user:", userId);
       
-      // First try to get the profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
@@ -28,7 +27,7 @@ export class CreditsService {
           .from('profiles')
           .insert([{ id: userId, credits: 5 }])
           .select('credits')
-          .single();
+          .maybeSingle();
 
         if (insertError) {
           console.error("Error creating profile:", insertError);
@@ -54,7 +53,7 @@ export class CreditsService {
         duration_ms: endTime - startTime
       });
 
-      return profile.credits ?? 5;
+      return profile.credits;
     } catch (error) {
       console.error("Critical error in fetchCredits:", error);
       throw error;
@@ -75,7 +74,7 @@ export class CreditsService {
         .update({ credits: currentCredits - 1 })
         .eq('id', userId)
         .select('credits')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error deducting credit:", error);
@@ -87,12 +86,12 @@ export class CreditsService {
 
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
-        new_credits: data.credits,
+        new_credits: data?.credits,
         duration_ms: endTime - startTime
       });
 
-      console.log("Credit deducted successfully. New credits:", data.credits);
-      return data.credits;
+      console.log("Credit deducted successfully. New credits:", data?.credits);
+      return data?.credits ?? 0;
     } catch (error) {
       console.error("Critical error in deductCredit:", error);
       throw error;
