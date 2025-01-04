@@ -68,6 +68,7 @@ export class CreditsService {
 
       const startTime = Date.now();
       console.log("Starting credit deduction for user:", userId);
+      console.log("Current credits before deduction:", currentCredits);
 
       const { data, error } = await supabase
         .from('profiles')
@@ -83,6 +84,7 @@ export class CreditsService {
 
       const endTime = Date.now();
       console.log("Credit deduction completed in", endTime - startTime, "ms");
+      console.log("Credit deduction response:", { data, error });
 
       await LogService.createLog(userId, 'CREDIT_DEDUCTION', {
         previous_credits: currentCredits,
