@@ -19,11 +19,11 @@ export const LoginForm = () => {
         console.log("User signed in, updating profile with username");
         // Extract username from email
         const username = session?.user?.email?.split('@')[0];
-        if (username && session?.user?.id) {
-          const { error } = await supabase
-           .from('profiles')
-           .update({ username: username })
-          .eq('id', session.user.id);
+        //if (username && session?.user?.id) {
+        //  const { error } = await supabase
+        //   .from('profiles')
+        //   .update({ username: username })
+       //   .eq('id', session.user.id);
 
           if (error) {
             console.error("Error updating username:", error);
