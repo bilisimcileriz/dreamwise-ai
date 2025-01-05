@@ -9,15 +9,34 @@ import { useEffect } from "react";
 export const LoginForm = () => {
   const { toast } = useToast();
 
+  
+
+  
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
-      
-      if (event === "SIGNED_IN") {
-      }
-          else {
+
+
+if (event === "SIGNED_IN") {
+        console.log("User signed in, updating profile with username");
+        // Extract username from email
+        const username = session?.user?.email?.split('@')[0];
+        if (username && session?.user?.id) {
+          //const { error } = await supabase
+           // .from('profiles')
+           // .update({ username: username })
+           // .eq('id', session.user.id);
+
+          if (error) {
+            console.error("Error updating username:", error);
+            toast({
+              title: "Error",
+              description: "Failed to update username",
+              variant: "destructive",
+            });
+          } else {
             console.log("Username updated successfully:", username);
           }
         }
@@ -25,6 +44,11 @@ export const LoginForm = () => {
         console.log("User signed out");
       }
     });
+
+
+
+      
+
 
     return () => {
       subscription.unsubscribe();
